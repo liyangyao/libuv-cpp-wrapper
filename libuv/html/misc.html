@@ -1,0 +1,403 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Miscellaneous utilities &mdash; libuv API documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.4.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="libuv API documentation" href="index.html" />
+    <link rel="prev" title="Threading and synchronization utilities" href="threading.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="threading.html" title="Threading and synchronization utilities"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="miscellaneous-utilities">
+<span id="misc"></span><h1>Miscellaneous utilities<a class="headerlink" href="#miscellaneous-utilities" title="Permalink to this headline">¶</a></h1>
+<p>This section contains miscellaneous functions that don&#8217;t really belong in any
+other section.</p>
+<div class="section" id="data-types">
+<h2>Data types<a class="headerlink" href="#data-types" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.uv_buf_t">
+<code class="descname">uv_buf_t</code><a class="headerlink" href="#c.uv_buf_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Buffer data type.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_file">
+<code class="descname">uv_file</code><a class="headerlink" href="#c.uv_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross platform representation of a file handle.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_os_sock_t">
+<code class="descname">uv_os_sock_t</code><a class="headerlink" href="#c.uv_os_sock_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross platform representation of a socket handle.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_os_fd_t">
+<code class="descname">uv_os_fd_t</code><a class="headerlink" href="#c.uv_os_fd_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract representation of a file descriptor. On Unix systems this is a
+<cite>typedef</cite> of <cite>int</cite> and on Windows fa <cite>HANDLE</cite>.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_rusage_t">
+<code class="descname">uv_rusage_t</code><a class="headerlink" href="#c.uv_rusage_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data type for resource usage results.</p>
+<div class="highlight-python"><div class="highlight"><pre>typedef struct {
+    uv_timeval_t ru_utime; /* user CPU time used */
+    uv_timeval_t ru_stime; /* system CPU time used */
+    uint64_t ru_maxrss; /* maximum resident set size */
+    uint64_t ru_ixrss; /* integral shared memory size */
+    uint64_t ru_idrss; /* integral unshared data size */
+    uint64_t ru_isrss; /* integral unshared stack size */
+    uint64_t ru_minflt; /* page reclaims (soft page faults) */
+    uint64_t ru_majflt; /* page faults (hard page faults) */
+    uint64_t ru_nswap; /* swaps */
+    uint64_t ru_inblock; /* block input operations */
+    uint64_t ru_oublock; /* block output operations */
+    uint64_t ru_msgsnd; /* IPC messages sent */
+    uint64_t ru_msgrcv; /* IPC messages received */
+    uint64_t ru_nsignals; /* signals received */
+    uint64_t ru_nvcsw; /* voluntary context switches */
+    uint64_t ru_nivcsw; /* involuntary context switches */
+} uv_rusage_t;
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_cpu_info_t">
+<code class="descname">uv_cpu_info_t</code><a class="headerlink" href="#c.uv_cpu_info_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data type for CPU information.</p>
+<div class="highlight-python"><div class="highlight"><pre>typedef struct uv_cpu_info_s {
+    char* model;
+    int speed;
+    struct uv_cpu_times_s {
+        uint64_t user;
+        uint64_t nice;
+        uint64_t sys;
+        uint64_t idle;
+        uint64_t irq;
+    } cpu_times;
+} uv_cpu_info_t;
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_interface_address_t">
+<code class="descname">uv_interface_address_t</code><a class="headerlink" href="#c.uv_interface_address_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data type for interface addresses.</p>
+<div class="highlight-python"><div class="highlight"><pre>typedef struct uv_interface_address_s {
+    char* name;
+    char phys_addr[6];
+    int is_internal;
+    union {
+        struct sockaddr_in address4;
+        struct sockaddr_in6 address6;
+    } address;
+    union {
+        struct sockaddr_in netmask4;
+        struct sockaddr_in6 netmask6;
+    } netmask;
+} uv_interface_address_t;
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.uv_guess_handle">
+uv_handle_type <code class="descname">uv_guess_handle</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_guess_handle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to detect what type of stream should be used with a given file
+descriptor. Usually this will be used during initialization to guess the
+type of the stdio streams.</p>
+<p>For <code class="docutils literal"><span class="pre">isatty()</span></code> functionality use this function and test for <code class="docutils literal"><span class="pre">UV_TTY</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_version">
+unsigned int <code class="descname">uv_version</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.uv_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the libuv version packed into a single integer. 8 bits are used for
+each component, with the patch number stored in the 8 least significant
+bits. E.g. for libuv 1.2.3 this would return 0x010203.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_version_string">
+const char* <code class="descname">uv_version_string</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.uv_version_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the libuv version number as a string. For non-release versions
+&#8220;-pre&#8221; is appended, so the version number could be &#8220;1.2.3-pre&#8221;.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_buf_init">
+<a class="reference internal" href="#c.uv_buf_t" title="uv_buf_t">uv_buf_t</a> <code class="descname">uv_buf_init</code><span class="sig-paren">(</span>char*<em>&nbsp;base</em>, unsigned int<em>&nbsp;len</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_buf_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for <a class="reference internal" href="#c.uv_buf_t" title="uv_buf_t"><code class="xref c c-type docutils literal"><span class="pre">uv_buf_t</span></code></a>.</p>
+<p>Due to platform differences the user cannot rely on the ordering of the
+<cite>base</cite> and <cite>len</cite> members of the uv_buf_t struct. The user is responsible for
+freeing <cite>base</cite> after the uv_buf_t is done. Return struct passed by value.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_setup_args">
+char** <code class="descname">uv_setup_args</code><span class="sig-paren">(</span>int<em>&nbsp;argc</em>, char**<em>&nbsp;argv</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_setup_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store the program arguments. Required for getting / setting the process title.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_get_process_title">
+int <code class="descname">uv_get_process_title</code><span class="sig-paren">(</span>char*<em>&nbsp;buffer</em>, size_t<em>&nbsp;size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_get_process_title" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the title of the current process.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_set_process_title">
+int <code class="descname">uv_set_process_title</code><span class="sig-paren">(</span>const char*<em>&nbsp;title</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_set_process_title" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the current process title.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_resident_set_memory">
+int <code class="descname">uv_resident_set_memory</code><span class="sig-paren">(</span>size_t*<em>&nbsp;rss</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_resident_set_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the resident set size (RSS) for the current process.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_uptime">
+int <code class="descname">uv_uptime</code><span class="sig-paren">(</span>double*<em>&nbsp;uptime</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_uptime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the current system uptime.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_getrusage">
+int <code class="descname">uv_getrusage</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_rusage_t" title="uv_rusage_t">uv_rusage_t</a>*<em>&nbsp;rusage</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_getrusage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the resource usage measures for the current process.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">On Windows not all fields are set, the unsupported fields are filled with zeroes.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_cpu_info">
+int <code class="descname">uv_cpu_info</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_cpu_info_t" title="uv_cpu_info_t">uv_cpu_info_t</a>**<em>&nbsp;cpu_infos</em>, int*<em>&nbsp;count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_cpu_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets information about the CPUs on the system. The <cite>cpu_infos</cite> array will
+have <cite>count</cite> elements and needs to be freed with <a class="reference internal" href="#c.uv_free_cpu_info" title="uv_free_cpu_info"><code class="xref c c-func docutils literal"><span class="pre">uv_free_cpu_info()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_free_cpu_info">
+void <code class="descname">uv_free_cpu_info</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_cpu_info_t" title="uv_cpu_info_t">uv_cpu_info_t</a>*<em>&nbsp;cpu_infos</em>, int<em>&nbsp;count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_free_cpu_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Frees the <cite>cpu_infos</cite> array previously allocated with <a class="reference internal" href="#c.uv_cpu_info" title="uv_cpu_info"><code class="xref c c-func docutils literal"><span class="pre">uv_cpu_info()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_interface_addresses">
+int <code class="descname">uv_interface_addresses</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_interface_address_t" title="uv_interface_address_t">uv_interface_address_t</a>**<em>&nbsp;addresses</em>, int*<em>&nbsp;count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_interface_addresses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets address information about the network interfaces on the system. An
+array of <cite>count</cite> elements is allocated and returned in <cite>addresses</cite>. It must
+be freed by the user, calling <a class="reference internal" href="#c.uv_free_interface_addresses" title="uv_free_interface_addresses"><code class="xref c c-func docutils literal"><span class="pre">uv_free_interface_addresses()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_free_interface_addresses">
+void <code class="descname">uv_free_interface_addresses</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_interface_address_t" title="uv_interface_address_t">uv_interface_address_t</a>*<em>&nbsp;addresses</em>, int<em>&nbsp;count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_free_interface_addresses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free an array of <a class="reference internal" href="#c.uv_interface_address_t" title="uv_interface_address_t"><code class="xref c c-type docutils literal"><span class="pre">uv_interface_address_t</span></code></a> which was returned by
+<a class="reference internal" href="#c.uv_interface_addresses" title="uv_interface_addresses"><code class="xref c c-func docutils literal"><span class="pre">uv_interface_addresses()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_loadavg">
+void <code class="descname">uv_loadavg</code><span class="sig-paren">(</span>double<em>&nbsp;avg[3]</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_loadavg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the load average. See: <a class="reference external" href="http://en.wikipedia.org/wiki/Load_(computing)">http://en.wikipedia.org/wiki/Load_(computing)</a></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Returns [0,0,0] on Windows (i.e., it&#8217;s not implemented).</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_ip4_addr">
+int <code class="descname">uv_ip4_addr</code><span class="sig-paren">(</span>const char*<em>&nbsp;ip</em>, int<em>&nbsp;port</em>, struct sockaddr_in*<em>&nbsp;addr</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_ip4_addr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a string containing an IPv4 addresses to a binary structure.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_ip6_addr">
+int <code class="descname">uv_ip6_addr</code><span class="sig-paren">(</span>const char*<em>&nbsp;ip</em>, int<em>&nbsp;port</em>, struct sockaddr_in6*<em>&nbsp;addr</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_ip6_addr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a string containing an IPv6 addresses to a binary structure.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_ip4_name">
+int <code class="descname">uv_ip4_name</code><span class="sig-paren">(</span>const struct sockaddr_in*<em>&nbsp;src</em>, char*<em>&nbsp;dst</em>, size_t<em>&nbsp;size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_ip4_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a binary structure containing an IPv4 address to a string.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_ip6_name">
+int <code class="descname">uv_ip6_name</code><span class="sig-paren">(</span>const struct sockaddr_in6*<em>&nbsp;src</em>, char*<em>&nbsp;dst</em>, size_t<em>&nbsp;size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_ip6_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a binary structure containing an IPv6 address to a string.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_inet_ntop">
+int <code class="descname">uv_inet_ntop</code><span class="sig-paren">(</span>int<em>&nbsp;af</em>, const void*<em>&nbsp;src</em>, char*<em>&nbsp;dst</em>, size_t<em>&nbsp;size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_inet_ntop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.uv_inet_pton">
+int <code class="descname">uv_inet_pton</code><span class="sig-paren">(</span>int<em>&nbsp;af</em>, const char*<em>&nbsp;src</em>, void*<em>&nbsp;dst</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_inet_pton" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross-platform IPv6-capable implementation of the &#8216;standard&#8217; <code class="docutils literal"><span class="pre">inet_ntop()</span></code>
+and <code class="docutils literal"><span class="pre">inet_pton()</span></code> functions. On success they return 0. In case of error
+the target <cite>dst</cite> pointer is unmodified.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_exepath">
+int <code class="descname">uv_exepath</code><span class="sig-paren">(</span>char*<em>&nbsp;buffer</em>, size_t*<em>&nbsp;size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_exepath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the executable path.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_cwd">
+int <code class="descname">uv_cwd</code><span class="sig-paren">(</span>char*<em>&nbsp;buffer</em>, size_t*<em>&nbsp;size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_cwd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the current working directory.</p>
+<div class="versionchanged">
+<p><span class="versionmodified">Changed in version 1.1.0: </span>On Unix the path no longer ends in a slash.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_chdir">
+int <code class="descname">uv_chdir</code><span class="sig-paren">(</span>const char*<em>&nbsp;dir</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_chdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes the current working directory.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_get_total_memory">
+uint64_t <code class="descname">uv_get_total_memory</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.uv_get_total_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets memory information (in bytes).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_hrtime">
+uint64_t <code class="descname">uv_hrtime</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.uv_hrtime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current high-resolution real time. This is expressed in
+nanoseconds. It is relative to an arbitrary time in the past. It is not
+related to the time of day and therefore not subject to clock drift. The
+primary use is for measuring performance between intervals.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Not every platform can support nanosecond resolution; however, this value will always
+be in nanoseconds.</p>
+</div>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Miscellaneous utilities</a><ul>
+<li><a class="reference internal" href="#data-types">Data types</a></li>
+<li><a class="reference internal" href="#api">API</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="threading.html"
+                        title="previous chapter">Threading and synchronization utilities</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/misc.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="threading.html" title="Threading and synchronization utilities"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright libuv contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b3.
+    </div>
+  </body>
+</html>

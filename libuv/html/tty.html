@@ -1,0 +1,221 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>uv_tty_t — TTY handle &mdash; libuv API documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.4.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="libuv API documentation" href="index.html" />
+    <link rel="next" title="uv_udp_t — UDP handle" href="udp.html" />
+    <link rel="prev" title="uv_pipe_t — Pipe handle" href="pipe.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="udp.html" title="uv_udp_t — UDP handle"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipe.html" title="uv_pipe_t — Pipe handle"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="uv-tty-t-tty-handle">
+<span id="tty"></span><h1><a class="reference internal" href="#c.uv_tty_t" title="uv_tty_t"><code class="xref c c-type docutils literal"><span class="pre">uv_tty_t</span></code></a> &#8212; TTY handle<a class="headerlink" href="#uv-tty-t-tty-handle" title="Permalink to this headline">¶</a></h1>
+<p>TTY handles represent a stream for the console.</p>
+<p><a class="reference internal" href="#c.uv_tty_t" title="uv_tty_t"><code class="xref c c-type docutils literal"><span class="pre">uv_tty_t</span></code></a> is a &#8216;subclass&#8217; of <a class="reference internal" href="stream.html#c.uv_stream_t" title="uv_stream_t"><code class="xref c c-type docutils literal"><span class="pre">uv_stream_t</span></code></a>.</p>
+<div class="section" id="data-types">
+<h2>Data types<a class="headerlink" href="#data-types" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.uv_tty_t">
+<code class="descname">uv_tty_t</code><a class="headerlink" href="#c.uv_tty_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>TTY handle type.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_tty_mode_t">
+<code class="descname">uv_tty_mode_t</code><a class="headerlink" href="#c.uv_tty_mode_t" title="Permalink to this definition">¶</a></dt>
+<dd><div class="versionadded">
+<p><span class="versionmodified">New in version 1.2.0.</span></p>
+</div>
+<p>TTY mode type:</p>
+<div class="highlight-python"><div class="highlight"><pre>typedef enum {
+    /* Initial/normal terminal mode */
+    UV_TTY_MODE_NORMAL,
+    /* Raw input mode (On Windows, ENABLE_WINDOW_INPUT is also enabled) */
+    UV_TTY_MODE_RAW,
+    /* Binary-safe I/O mode for IPC (Unix-only) */
+    UV_TTY_MODE_IO
+} uv_tty_mode_t;
+</pre></div>
+</div>
+</dd></dl>
+
+<div class="section" id="public-members">
+<h3>Public members<a class="headerlink" href="#public-members" title="Permalink to this headline">¶</a></h3>
+<p>N/A</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">The <a class="reference internal" href="stream.html#c.uv_stream_t" title="uv_stream_t"><code class="xref c c-type docutils literal"><span class="pre">uv_stream_t</span></code></a> members also apply.</p>
+</div>
+</div>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.uv_tty_init">
+int <code class="descname">uv_tty_init</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*, <a class="reference internal" href="#c.uv_tty_t" title="uv_tty_t">uv_tty_t</a>*, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;fd</em>, int<em>&nbsp;readable</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_tty_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a new TTY stream with the given file descriptor. Usually the
+file descriptor will be:</p>
+<ul class="simple">
+<li>0 = stdin</li>
+<li>1 = stdout</li>
+<li>2 = stderr</li>
+</ul>
+<p><cite>readable</cite>, specifies if you plan on calling <a class="reference internal" href="stream.html#c.uv_read_start" title="uv_read_start"><code class="xref c c-func docutils literal"><span class="pre">uv_read_start()</span></code></a> with
+this stream. stdin is readable, stdout is not.</p>
+<p>On Unix this function will try to open <code class="docutils literal"><span class="pre">/dev/tty</span></code> and use it if the passed file
+descriptor refers to a TTY. This lets libuv put the tty in non-blocking mode
+without affecting other processes that share the tty.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If opening <code class="docutils literal"><span class="pre">/dev/tty</span></code> fails, libuv falls back to blocking writes for non-readable
+TTY streams.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_tty_set_mode">
+int <code class="descname">uv_tty_set_mode</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_tty_t" title="uv_tty_t">uv_tty_t</a>*, <a class="reference internal" href="#c.uv_tty_mode_t" title="uv_tty_mode_t">uv_tty_mode_t</a><em>&nbsp;mode</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_tty_set_mode" title="Permalink to this definition">¶</a></dt>
+<dd><div class="versionchanged">
+<p><span class="versionmodified">Changed in version 1.2.0:: </span>the mode is specified as a <a class="reference internal" href="#c.uv_tty_mode_t" title="uv_tty_mode_t"><code class="xref c c-type docutils literal"><span class="pre">uv_tty_mode_t</span></code></a>
+value.</p>
+</div>
+<p>Set the TTY using the specified terminal mode.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_tty_reset_mode">
+int <code class="descname">uv_tty_reset_mode</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.uv_tty_reset_mode" title="Permalink to this definition">¶</a></dt>
+<dd><p>To be called when the program exits. Resets TTY settings to default
+values for the next process to take over.</p>
+<p>This function is async signal-safe on Unix platforms but can fail with error
+code <code class="docutils literal"><span class="pre">UV_EBUSY</span></code> if you call it when execution is inside
+<a class="reference internal" href="#c.uv_tty_set_mode" title="uv_tty_set_mode"><code class="xref c c-func docutils literal"><span class="pre">uv_tty_set_mode()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_tty_get_winsize">
+int <code class="descname">uv_tty_get_winsize</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_tty_t" title="uv_tty_t">uv_tty_t</a>*, int*<em>&nbsp;width</em>, int*<em>&nbsp;height</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_tty_get_winsize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the current Window size. On success it returns 0.</p>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">The <a class="reference internal" href="stream.html#c.uv_stream_t" title="uv_stream_t"><code class="xref c c-type docutils literal"><span class="pre">uv_stream_t</span></code></a> API functions also apply.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="docutils literal"><span class="pre">uv_tty_t</span></code> &#8212; TTY handle</a><ul>
+<li><a class="reference internal" href="#data-types">Data types</a><ul>
+<li><a class="reference internal" href="#public-members">Public members</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api">API</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipe.html"
+                        title="previous chapter"><code class="docutils literal"><span class="pre">uv_pipe_t</span></code> &#8212; Pipe handle</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="udp.html"
+                        title="next chapter"><code class="docutils literal"><span class="pre">uv_udp_t</span></code> &#8212; UDP handle</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tty.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="udp.html" title="uv_udp_t — UDP handle"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipe.html" title="uv_pipe_t — Pipe handle"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright libuv contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b3.
+    </div>
+  </body>
+</html>

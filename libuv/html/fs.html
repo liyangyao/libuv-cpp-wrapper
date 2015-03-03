@@ -1,0 +1,494 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Filesystem operations &mdash; libuv API documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.4.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="libuv API documentation" href="index.html" />
+    <link rel="next" title="Thread pool work scheduling" href="threadpool.html" />
+    <link rel="prev" title="uv_fs_poll_t — FS Poll handle" href="fs_poll.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="threadpool.html" title="Thread pool work scheduling"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="fs_poll.html" title="uv_fs_poll_t — FS Poll handle"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="filesystem-operations">
+<span id="fs"></span><h1>Filesystem operations<a class="headerlink" href="#filesystem-operations" title="Permalink to this headline">¶</a></h1>
+<p>libuv provides a wide variety of cross-platform sync and async filesystem
+operations. All functions defined in this document take a callback, which is
+allowed to be NULL. If the callback is NULL the request is completed synchronously,
+otherwise it will be performed asynchronously.</p>
+<p>All file operations are run on the threadpool, see <a class="reference internal" href="threadpool.html#threadpool"><em>Thread pool work scheduling</em></a> for information
+on the threadpool size.</p>
+<div class="section" id="data-types">
+<h2>Data types<a class="headerlink" href="#data-types" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.uv_fs_t">
+<code class="descname">uv_fs_t</code><a class="headerlink" href="#c.uv_fs_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filesystem request type.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_timespec_t">
+<code class="descname">uv_timespec_t</code><a class="headerlink" href="#c.uv_timespec_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Portable equivalent of <code class="docutils literal"><span class="pre">struct</span> <span class="pre">timespec</span></code>.</p>
+<div class="highlight-python"><div class="highlight"><pre>typedef struct {
+    long tv_sec;
+    long tv_nsec;
+} uv_timespec_t;
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_stat_t">
+<code class="descname">uv_stat_t</code><a class="headerlink" href="#c.uv_stat_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Portable equivalent of <code class="docutils literal"><span class="pre">struct</span> <span class="pre">stat</span></code>.</p>
+<div class="highlight-python"><div class="highlight"><pre>typedef struct {
+    uint64_t st_dev;
+    uint64_t st_mode;
+    uint64_t st_nlink;
+    uint64_t st_uid;
+    uint64_t st_gid;
+    uint64_t st_rdev;
+    uint64_t st_ino;
+    uint64_t st_size;
+    uint64_t st_blksize;
+    uint64_t st_blocks;
+    uint64_t st_flags;
+    uint64_t st_gen;
+    uv_timespec_t st_atim;
+    uv_timespec_t st_mtim;
+    uv_timespec_t st_ctim;
+    uv_timespec_t st_birthtim;
+} uv_stat_t;
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_fs_type">
+<code class="descname">uv_fs_type</code><a class="headerlink" href="#c.uv_fs_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filesystem request type.</p>
+<div class="highlight-python"><div class="highlight"><pre>typedef enum {
+    UV_FS_UNKNOWN = -1,
+    UV_FS_CUSTOM,
+    UV_FS_OPEN,
+    UV_FS_CLOSE,
+    UV_FS_READ,
+    UV_FS_WRITE,
+    UV_FS_SENDFILE,
+    UV_FS_STAT,
+    UV_FS_LSTAT,
+    UV_FS_FSTAT,
+    UV_FS_FTRUNCATE,
+    UV_FS_UTIME,
+    UV_FS_FUTIME,
+    UV_FS_ACCESS,
+    UV_FS_CHMOD,
+    UV_FS_FCHMOD,
+    UV_FS_FSYNC,
+    UV_FS_FDATASYNC,
+    UV_FS_UNLINK,
+    UV_FS_RMDIR,
+    UV_FS_MKDIR,
+    UV_FS_MKDTEMP,
+    UV_FS_RENAME,
+    UV_FS_SCANDIR,
+    UV_FS_LINK,
+    UV_FS_SYMLINK,
+    UV_FS_READLINK,
+    UV_FS_CHOWN,
+    UV_FS_FCHOWN
+} uv_fs_type;
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_dirent_t">
+<code class="descname">uv_dirent_t</code><a class="headerlink" href="#c.uv_dirent_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cross platform (reduced) equivalent of <code class="docutils literal"><span class="pre">struct</span> <span class="pre">dirent</span></code>.
+Used in <a class="reference internal" href="#c.uv_fs_scandir_next" title="uv_fs_scandir_next"><code class="xref c c-func docutils literal"><span class="pre">uv_fs_scandir_next()</span></code></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre>typedef enum {
+    UV_DIRENT_UNKNOWN,
+    UV_DIRENT_FILE,
+    UV_DIRENT_DIR,
+    UV_DIRENT_LINK,
+    UV_DIRENT_FIFO,
+    UV_DIRENT_SOCKET,
+    UV_DIRENT_CHAR,
+    UV_DIRENT_BLOCK
+} uv_dirent_type_t;
+
+typedef struct uv_dirent_s {
+    const char* name;
+    uv_dirent_type_t type;
+} uv_dirent_t;
+</pre></div>
+</div>
+</dd></dl>
+
+<div class="section" id="public-members">
+<h3>Public members<a class="headerlink" href="#public-members" title="Permalink to this headline">¶</a></h3>
+<dl class="member">
+<dt id="c.uv_fs_t.loop">
+<a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>* <code class="descname">uv_fs_t.loop</code><a class="headerlink" href="#c.uv_fs_t.loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loop that started this request and where completion will be reported.
+Readonly.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.uv_fs_t.fs_type">
+<a class="reference internal" href="#c.uv_fs_type" title="uv_fs_type">uv_fs_type</a> <code class="descname">uv_fs_t.fs_type</code><a class="headerlink" href="#c.uv_fs_t.fs_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>FS request type.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.uv_fs_t.path">
+const char* <code class="descname">uv_fs_t.path</code><a class="headerlink" href="#c.uv_fs_t.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path affecting the request.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.uv_fs_t.result">
+ssize_t <code class="descname">uv_fs_t.result</code><a class="headerlink" href="#c.uv_fs_t.result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Result of the request. &lt; 0 means error, success otherwise. On requests such
+as <a class="reference internal" href="#c.uv_fs_read" title="uv_fs_read"><code class="xref c c-func docutils literal"><span class="pre">uv_fs_read()</span></code></a> or <a class="reference internal" href="#c.uv_fs_write" title="uv_fs_write"><code class="xref c c-func docutils literal"><span class="pre">uv_fs_write()</span></code></a> it indicates the amount of
+data that was read or written, respectively.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.uv_fs_t.statbuf">
+<a class="reference internal" href="#c.uv_stat_t" title="uv_stat_t">uv_stat_t</a> <code class="descname">uv_fs_t.statbuf</code><a class="headerlink" href="#c.uv_fs_t.statbuf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stores the result of <a class="reference internal" href="#c.uv_fs_stat" title="uv_fs_stat"><code class="xref c c-func docutils literal"><span class="pre">uv_fs_stat()</span></code></a> and other stat requests.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.uv_fs_t.ptr">
+void* <code class="descname">uv_fs_t.ptr</code><a class="headerlink" href="#c.uv_fs_t.ptr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stores the result of <a class="reference internal" href="#c.uv_fs_readlink" title="uv_fs_readlink"><code class="xref c c-func docutils literal"><span class="pre">uv_fs_readlink()</span></code></a> and serves as an alias to
+<cite>statbuf</cite>.</p>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">The <a class="reference internal" href="request.html#c.uv_req_t" title="uv_req_t"><code class="xref c c-type docutils literal"><span class="pre">uv_req_t</span></code></a> members also apply.</p>
+</div>
+</div>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.uv_fs_req_cleanup">
+void <code class="descname">uv_fs_req_cleanup</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_req_cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cleanup request. Must be called after a request is finished to deallocate
+any memory libuv might have allocated.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_close">
+int <code class="descname">uv_fs_close</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">close(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_open">
+int <code class="descname">uv_fs_open</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, int<em>&nbsp;flags</em>, int<em>&nbsp;mode</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">open(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_read">
+int <code class="descname">uv_fs_read</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, const <a class="reference internal" href="misc.html#c.uv_buf_t" title="uv_buf_t">uv_buf_t</a><em>&nbsp;bufs[]</em>, unsigned int<em>&nbsp;nbufs</em>, int64_t<em>&nbsp;offset</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">preadv(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_unlink">
+int <code class="descname">uv_fs_unlink</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_unlink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">unlink(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_write">
+int <code class="descname">uv_fs_write</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, const <a class="reference internal" href="misc.html#c.uv_buf_t" title="uv_buf_t">uv_buf_t</a><em>&nbsp;bufs[]</em>, unsigned int<em>&nbsp;nbufs</em>, int64_t<em>&nbsp;offset</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">pwritev(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_mkdir">
+int <code class="descname">uv_fs_mkdir</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, int<em>&nbsp;mode</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_mkdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">mkdir(2)</span></code>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><cite>mode</cite> is currently not implemented on Windows.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_mkdtemp">
+int <code class="descname">uv_fs_mkdtemp</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;tpl</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_mkdtemp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">mkdtemp(3)</span></code>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The result can be found as a null terminated string at <cite>req-&gt;path</cite>.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_rmdir">
+int <code class="descname">uv_fs_rmdir</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_rmdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">rmdir(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_scandir">
+int <code class="descname">uv_fs_scandir</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, int<em>&nbsp;flags</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_scandir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_scandir_next">
+int <code class="descname">uv_fs_scandir_next</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="#c.uv_dirent_t" title="uv_dirent_t">uv_dirent_t</a>*<em>&nbsp;ent</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_scandir_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">scandir(3)</span></code>, with a slightly different API. Once the callback
+for the request is called, the user can use <a class="reference internal" href="#c.uv_fs_scandir_next" title="uv_fs_scandir_next"><code class="xref c c-func docutils literal"><span class="pre">uv_fs_scandir_next()</span></code></a> to
+get <cite>ent</cite> populated with the next directory entry data. When there are no
+more entries <code class="docutils literal"><span class="pre">UV_EOF</span></code> will be returned.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_stat">
+int <code class="descname">uv_fs_stat</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_stat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_fstat">
+int <code class="descname">uv_fs_fstat</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_fstat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_lstat">
+int <code class="descname">uv_fs_lstat</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_lstat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">(f/l)stat(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_rename">
+int <code class="descname">uv_fs_rename</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, const char*<em>&nbsp;new_path</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_rename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">rename(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_fsync">
+int <code class="descname">uv_fs_fsync</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_fsync" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">fsync(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_fdatasync">
+int <code class="descname">uv_fs_fdatasync</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_fdatasync" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">fdatasync(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_ftruncate">
+int <code class="descname">uv_fs_ftruncate</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, int64_t<em>&nbsp;offset</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_ftruncate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">ftruncate(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_sendfile">
+int <code class="descname">uv_fs_sendfile</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;out_fd</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;in_fd</em>, int64_t<em>&nbsp;in_offset</em>, size_t<em>&nbsp;length</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_sendfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Limited equivalent to <code class="docutils literal"><span class="pre">sendfile(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_access">
+int <code class="descname">uv_fs_access</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, int<em>&nbsp;mode</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_access" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">access(2)</span></code> on Unix. Windows uses <code class="docutils literal"><span class="pre">GetFileAttributesW()</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_chmod">
+int <code class="descname">uv_fs_chmod</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, int<em>&nbsp;mode</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_chmod" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_fchmod">
+int <code class="descname">uv_fs_fchmod</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, int<em>&nbsp;mode</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_fchmod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">(f)chmod(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_utime">
+int <code class="descname">uv_fs_utime</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, double<em>&nbsp;atime</em>, double<em>&nbsp;mtime</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_utime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_futime">
+int <code class="descname">uv_fs_futime</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, double<em>&nbsp;atime</em>, double<em>&nbsp;mtime</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_futime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">(f)utime(s)(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_link">
+int <code class="descname">uv_fs_link</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, const char*<em>&nbsp;new_path</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">link(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_symlink">
+int <code class="descname">uv_fs_symlink</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, const char*<em>&nbsp;new_path</em>, int<em>&nbsp;flags</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_symlink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">symlink(2)</span></code>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>On Windows the <cite>flags</cite> parameter can be specified to control how the symlink will
+be created:</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">UV_FS_SYMLINK_DIR</span></code>: indicates that <cite>path</cite> points to a directory.</li>
+<li><code class="docutils literal"><span class="pre">UV_FS_SYMLINK_JUNCTION</span></code>: request that the symlink is created
+using junction points.</li>
+</ul>
+</div></blockquote>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_readlink">
+int <code class="descname">uv_fs_readlink</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_readlink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">readlink(2)</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_chown">
+int <code class="descname">uv_fs_chown</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, const char*<em>&nbsp;path</em>, uv_uid_t<em>&nbsp;uid</em>, uv_gid_t<em>&nbsp;gid</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_chown" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fs_fchown">
+int <code class="descname">uv_fs_fchown</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*<em>&nbsp;loop</em>, <a class="reference internal" href="#c.uv_fs_t" title="uv_fs_t">uv_fs_t</a>*<em>&nbsp;req</em>, <a class="reference internal" href="misc.html#c.uv_file" title="uv_file">uv_file</a><em>&nbsp;file</em>, uv_uid_t<em>&nbsp;uid</em>, uv_gid_t<em>&nbsp;gid</em>, uv_fs_cb<em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fs_fchown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equivalent to <code class="docutils literal"><span class="pre">(f)chown(2)</span></code>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">These functions are not implemented on Windows.</p>
+</div>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">The <a class="reference internal" href="request.html#c.uv_req_t" title="uv_req_t"><code class="xref c c-type docutils literal"><span class="pre">uv_req_t</span></code></a> API functions also apply.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Filesystem operations</a><ul>
+<li><a class="reference internal" href="#data-types">Data types</a><ul>
+<li><a class="reference internal" href="#public-members">Public members</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api">API</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="fs_poll.html"
+                        title="previous chapter"><code class="docutils literal"><span class="pre">uv_fs_poll_t</span></code> &#8212; FS Poll handle</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="threadpool.html"
+                        title="next chapter">Thread pool work scheduling</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/fs.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="threadpool.html" title="Thread pool work scheduling"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="fs_poll.html" title="uv_fs_poll_t — FS Poll handle"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright libuv contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b3.
+    </div>
+  </body>
+</html>

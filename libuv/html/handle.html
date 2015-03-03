@@ -1,0 +1,316 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>uv_handle_t — Base handle &mdash; libuv API documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.4.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="libuv API documentation" href="index.html" />
+    <link rel="next" title="uv_req_t — Base request" href="request.html" />
+    <link rel="prev" title="uv_loop_t — Event loop" href="loop.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="request.html" title="uv_req_t — Base request"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="loop.html" title="uv_loop_t — Event loop"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="uv-handle-t-base-handle">
+<span id="handle"></span><h1><a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t"><code class="xref c c-type docutils literal"><span class="pre">uv_handle_t</span></code></a> &#8212; Base handle<a class="headerlink" href="#uv-handle-t-base-handle" title="Permalink to this headline">¶</a></h1>
+<p><cite>uv_handle_t</cite> is the base type for all libuv handle types.</p>
+<p>Structures are aligned so that any libuv handle can be cast to <cite>uv_handle_t</cite>.
+All API functions defined here work with any handle type.</p>
+<div class="section" id="data-types">
+<h2>Data types<a class="headerlink" href="#data-types" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.uv_handle_t">
+<code class="descname">uv_handle_t</code><a class="headerlink" href="#c.uv_handle_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>The base libuv handle type.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_any_handle">
+<code class="descname">uv_any_handle</code><a class="headerlink" href="#c.uv_any_handle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Union of all handle types.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_alloc_cb">
+void <code class="descname">(*uv_alloc_cb)</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em>, size_t<em>&nbsp;suggested_size</em>, <a class="reference internal" href="misc.html#c.uv_buf_t" title="uv_buf_t">uv_buf_t</a>*<em>&nbsp;buf</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_alloc_cb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type definition for callback passed to <a class="reference internal" href="stream.html#c.uv_read_start" title="uv_read_start"><code class="xref c c-func docutils literal"><span class="pre">uv_read_start()</span></code></a> and
+<a class="reference internal" href="udp.html#c.uv_udp_recv_start" title="uv_udp_recv_start"><code class="xref c c-func docutils literal"><span class="pre">uv_udp_recv_start()</span></code></a>. The user must fill the supplied <a class="reference internal" href="misc.html#c.uv_buf_t" title="uv_buf_t"><code class="xref c c-type docutils literal"><span class="pre">uv_buf_t</span></code></a>
+structure with whatever size, as long as it&#8217;s &gt; 0. A suggested size (65536 at the moment)
+is provided, but it doesn&#8217;t need to be honored. Setting the buffer&#8217;s length to 0
+will trigger a <code class="docutils literal"><span class="pre">UV_ENOBUFS</span></code> error in the <a class="reference internal" href="udp.html#c.uv_udp_recv_cb" title="uv_udp_recv_cb"><code class="xref c c-type docutils literal"><span class="pre">uv_udp_recv_cb</span></code></a> or
+<a class="reference internal" href="stream.html#c.uv_read_cb" title="uv_read_cb"><code class="xref c c-type docutils literal"><span class="pre">uv_read_cb</span></code></a> callback.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_close_cb">
+void <code class="descname">(*uv_close_cb)</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_close_cb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type definition for callback passed to <a class="reference internal" href="#c.uv_close" title="uv_close"><code class="xref c c-func docutils literal"><span class="pre">uv_close()</span></code></a>.</p>
+</dd></dl>
+
+<div class="section" id="public-members">
+<h3>Public members<a class="headerlink" href="#public-members" title="Permalink to this headline">¶</a></h3>
+<dl class="member">
+<dt id="c.uv_handle_t.loop">
+<a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>* <code class="descname">uv_handle_t.loop</code><a class="headerlink" href="#c.uv_handle_t.loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pointer to the <a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t"><code class="xref c c-type docutils literal"><span class="pre">uv_loop_t</span></code></a> where the handle is running on. Readonly.</p>
+</dd></dl>
+
+<dl class="member">
+<dt id="c.uv_handle_t.data">
+void* <code class="descname">uv_handle_t.data</code><a class="headerlink" href="#c.uv_handle_t.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Space for user-defined arbitrary data. libuv does not use this field.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.uv_is_active">
+int <code class="descname">uv_is_active</code><span class="sig-paren">(</span>const <a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_is_active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns non-zero if the handle is active, zero if it&#8217;s inactive. What
+&#8220;active&#8221; means depends on the type of handle:</p>
+<ul class="simple">
+<li>A uv_async_t handle is always active and cannot be deactivated, except
+by closing it with uv_close().</li>
+<li>A uv_pipe_t, uv_tcp_t, uv_udp_t, etc. handle - basically any handle that
+deals with i/o - is active when it is doing something that involves i/o,
+like reading, writing, connecting, accepting new connections, etc.</li>
+<li>A uv_check_t, uv_idle_t, uv_timer_t, etc. handle is active when it has
+been started with a call to uv_check_start(), uv_idle_start(), etc.</li>
+</ul>
+<p>Rule of thumb: if a handle of type <cite>uv_foo_t</cite> has a <cite>uv_foo_start()</cite>
+function, then it&#8217;s active from the moment that function is called.
+Likewise, <cite>uv_foo_stop()</cite> deactivates the handle again.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_is_closing">
+int <code class="descname">uv_is_closing</code><span class="sig-paren">(</span>const <a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_is_closing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns non-zero if the handle is closing or closed, zero otherwise.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This function should only be used between the initialization of the handle and the
+arrival of the close callback.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_close">
+void <code class="descname">uv_close</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em>, <a class="reference internal" href="#c.uv_close_cb" title="uv_close_cb">uv_close_cb</a><em>&nbsp;close_cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Request handle to be closed. <cite>close_cb</cite> will be called asynchronously after
+this call. This MUST be called on each handle before memory is released.</p>
+<p>Handles that wrap file descriptors are closed immediately but
+<cite>close_cb</cite> will still be deferred to the next iteration of the event loop.
+It gives you a chance to free up any resources associated with the handle.</p>
+<p>In-progress requests, like uv_connect_t or uv_write_t, are cancelled and
+have their callbacks called asynchronously with status=UV_ECANCELED.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_ref">
+void <code class="descname">uv_ref</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_ref" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reference the given handle. References are idempotent, that is, if a handle
+is already referenced calling this function again will have no effect.</p>
+<p>See <a class="reference internal" href="#refcount"><em>Reference counting</em></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_unref">
+void <code class="descname">uv_unref</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_unref" title="Permalink to this definition">¶</a></dt>
+<dd><p>Un-reference the given handle. References are idempotent, that is, if a handle
+is not referenced calling this function again will have no effect.</p>
+<p>See <a class="reference internal" href="#refcount"><em>Reference counting</em></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_has_ref">
+int <code class="descname">uv_has_ref</code><span class="sig-paren">(</span>const <a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_has_ref" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns non-zero if the handle referenced, zero otherwise.</p>
+<p>See <a class="reference internal" href="#refcount"><em>Reference counting</em></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_handle_size">
+size_t <code class="descname">uv_handle_size</code><span class="sig-paren">(</span>uv_handle_type<em>&nbsp;type</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_handle_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the size of the given handle type. Useful for FFI binding writers
+who don&#8217;t want to know the structure layout.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="miscellaneous-api-functions">
+<h2>Miscellaneous API functions<a class="headerlink" href="#miscellaneous-api-functions" title="Permalink to this headline">¶</a></h2>
+<p>The following API functions take a <a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t"><code class="xref c c-type docutils literal"><span class="pre">uv_handle_t</span></code></a> argument but they work
+just for some handle types.</p>
+<dl class="function">
+<dt id="c.uv_send_buffer_size">
+int <code class="descname">uv_send_buffer_size</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em>, int*<em>&nbsp;value</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_send_buffer_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets or sets the size of the send buffer that the operating
+system uses for the socket.</p>
+<p>If <cite>*value</cite> == 0, it will return the current send buffer size,
+otherwise it will use <cite>*value</cite> to set the new send buffer size.</p>
+<p>This function works for TCP, pipe and UDP handles on Unix and for TCP and
+UDP handles on Windows.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Linux will set double the size and return double the size of the original set value.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_recv_buffer_size">
+int <code class="descname">uv_recv_buffer_size</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em>, int*<em>&nbsp;value</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_recv_buffer_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets or sets the size of the receive buffer that the operating
+system uses for the socket.</p>
+<p>If <cite>*value</cite> == 0, it will return the current receive buffer size,
+otherwise it will use <cite>*value</cite> to set the new receive buffer size.</p>
+<p>This function works for TCP, pipe and UDP handles on Unix and for TCP and
+UDP handles on Windows.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Linux will set double the size and return double the size of the original set value.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_fileno">
+int <code class="descname">uv_fileno</code><span class="sig-paren">(</span>const <a class="reference internal" href="#c.uv_handle_t" title="uv_handle_t">uv_handle_t</a>*<em>&nbsp;handle</em>, <a class="reference internal" href="misc.html#c.uv_os_fd_t" title="uv_os_fd_t">uv_os_fd_t</a>*<em>&nbsp;fd</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_fileno" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the platform dependent file descriptor equivalent.</p>
+<p>The following handles are supported: TCP, pipes, TTY, UDP and poll. Passing
+any other handle type will fail with <cite>UV_EINVAL</cite>.</p>
+<p>If a handle doesn&#8217;t have an attached file descriptor yet or the handle
+itself has been closed, this function will return <cite>UV_EBADF</cite>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Be very careful when using this function. libuv assumes it&#8217;s in control of the file
+descriptor so any change to it may lead to malfunction.</p>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="reference-counting">
+<span id="refcount"></span><h2>Reference counting<a class="headerlink" href="#reference-counting" title="Permalink to this headline">¶</a></h2>
+<p>The libuv event loop (if run in the default mode) will run until there are no
+active <cite>and</cite> referenced handles left. The user can force the loop to exit early
+by unreferencing handles which are active, for example by calling <a class="reference internal" href="#c.uv_unref" title="uv_unref"><code class="xref c c-func docutils literal"><span class="pre">uv_unref()</span></code></a>
+after calling <a class="reference internal" href="timer.html#c.uv_timer_start" title="uv_timer_start"><code class="xref c c-func docutils literal"><span class="pre">uv_timer_start()</span></code></a>.</p>
+<p>A handle can be referenced or unreferenced, the refcounting scheme doesn&#8217;t use
+a counter, so both operations are idempotent.</p>
+<p>All handles are referenced when active by default, see <a class="reference internal" href="#c.uv_is_active" title="uv_is_active"><code class="xref c c-func docutils literal"><span class="pre">uv_is_active()</span></code></a>
+for a more detailed explanation on what being <cite>active</cite> involves.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="docutils literal"><span class="pre">uv_handle_t</span></code> &#8212; Base handle</a><ul>
+<li><a class="reference internal" href="#data-types">Data types</a><ul>
+<li><a class="reference internal" href="#public-members">Public members</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api">API</a></li>
+<li><a class="reference internal" href="#miscellaneous-api-functions">Miscellaneous API functions</a></li>
+<li><a class="reference internal" href="#reference-counting">Reference counting</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="loop.html"
+                        title="previous chapter"><code class="docutils literal"><span class="pre">uv_loop_t</span></code> &#8212; Event loop</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="request.html"
+                        title="next chapter"><code class="docutils literal"><span class="pre">uv_req_t</span></code> &#8212; Base request</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/handle.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="request.html" title="uv_req_t — Base request"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="loop.html" title="uv_loop_t — Event loop"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright libuv contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b3.
+    </div>
+  </body>
+</html>

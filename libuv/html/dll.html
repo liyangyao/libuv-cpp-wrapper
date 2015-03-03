@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Shared library handling &mdash; libuv API documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.4.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="libuv API documentation" href="index.html" />
+    <link rel="next" title="Threading and synchronization utilities" href="threading.html" />
+    <link rel="prev" title="DNS utility functions" href="dns.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="threading.html" title="Threading and synchronization utilities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dns.html" title="DNS utility functions"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="shared-library-handling">
+<span id="dll"></span><h1>Shared library handling<a class="headerlink" href="#shared-library-handling" title="Permalink to this headline">¶</a></h1>
+<p>libuv provides cross platform utilities for loading shared libraries and
+retrieving symbols from them, using the following API.</p>
+<div class="section" id="data-types">
+<h2>Data types<a class="headerlink" href="#data-types" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.uv_lib_t">
+<code class="descname">uv_lib_t</code><a class="headerlink" href="#c.uv_lib_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shared library data type.</p>
+</dd></dl>
+
+<div class="section" id="public-members">
+<h3>Public members<a class="headerlink" href="#public-members" title="Permalink to this headline">¶</a></h3>
+<p>N/A</p>
+</div>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.uv_dlopen">
+int <code class="descname">uv_dlopen</code><span class="sig-paren">(</span>const char*<em>&nbsp;filename</em>, <a class="reference internal" href="#c.uv_lib_t" title="uv_lib_t">uv_lib_t</a>*<em>&nbsp;lib</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_dlopen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens a shared library. The filename is in utf-8. Returns 0 on success and
+-1 on error. Call <a class="reference internal" href="#c.uv_dlerror" title="uv_dlerror"><code class="xref c c-func docutils literal"><span class="pre">uv_dlerror()</span></code></a> to get the error message.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_dlclose">
+void <code class="descname">uv_dlclose</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_lib_t" title="uv_lib_t">uv_lib_t</a>*<em>&nbsp;lib</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_dlclose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close the shared library.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_dlsym">
+<code class="descname">uv_dlsym</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_lib_t" title="uv_lib_t">uv_lib_t</a>*<em>&nbsp;lib</em>, const char*<em>&nbsp;name</em>, void**<em>&nbsp;ptr</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_dlsym" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves a data pointer from a dynamic library. It is legal for a symbol
+to map to NULL. Returns 0 on success and -1 if the symbol was not found.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_dlerror">
+const char* <code class="descname">uv_dlerror</code><span class="sig-paren">(</span>const <a class="reference internal" href="#c.uv_lib_t" title="uv_lib_t">uv_lib_t</a>*<em>&nbsp;lib</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_dlerror" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the last uv_dlopen() or uv_dlsym() error message.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Shared library handling</a><ul>
+<li><a class="reference internal" href="#data-types">Data types</a><ul>
+<li><a class="reference internal" href="#public-members">Public members</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api">API</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dns.html"
+                        title="previous chapter">DNS utility functions</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="threading.html"
+                        title="next chapter">Threading and synchronization utilities</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/dll.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="threading.html" title="Threading and synchronization utilities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dns.html" title="DNS utility functions"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright libuv contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b3.
+    </div>
+  </body>
+</html>

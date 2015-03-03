@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>uv_check_t — Check handle &mdash; libuv API documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.4.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="libuv API documentation" href="index.html" />
+    <link rel="next" title="uv_idle_t — Idle handle" href="idle.html" />
+    <link rel="prev" title="uv_prepare_t — Prepare handle" href="prepare.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="idle.html" title="uv_idle_t — Idle handle"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="prepare.html" title="uv_prepare_t — Prepare handle"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="uv-check-t-check-handle">
+<span id="check"></span><h1><a class="reference internal" href="#c.uv_check_t" title="uv_check_t"><code class="xref c c-type docutils literal"><span class="pre">uv_check_t</span></code></a> &#8212; Check handle<a class="headerlink" href="#uv-check-t-check-handle" title="Permalink to this headline">¶</a></h1>
+<p>Check handles will run the given callback once per loop iteration, right
+after polling for i/o.</p>
+<div class="section" id="data-types">
+<h2>Data types<a class="headerlink" href="#data-types" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.uv_check_t">
+<code class="descname">uv_check_t</code><a class="headerlink" href="#c.uv_check_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check handle type.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_check_cb">
+void <code class="descname">(*uv_check_cb)</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_check_t" title="uv_check_t">uv_check_t</a>*<em>&nbsp;handle</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_check_cb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type definition for callback passed to <a class="reference internal" href="#c.uv_check_start" title="uv_check_start"><code class="xref c c-func docutils literal"><span class="pre">uv_check_start()</span></code></a>.</p>
+</dd></dl>
+
+<div class="section" id="public-members">
+<h3>Public members<a class="headerlink" href="#public-members" title="Permalink to this headline">¶</a></h3>
+<p>N/A</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">The <a class="reference internal" href="handle.html#c.uv_handle_t" title="uv_handle_t"><code class="xref c c-type docutils literal"><span class="pre">uv_handle_t</span></code></a> members also apply.</p>
+</div>
+</div>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.uv_check_init">
+int <code class="descname">uv_check_init</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*, <a class="reference internal" href="#c.uv_check_t" title="uv_check_t">uv_check_t</a>*<em>&nbsp;check</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_check_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the handle.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_check_start">
+int <code class="descname">uv_check_start</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_check_t" title="uv_check_t">uv_check_t</a>*<em>&nbsp;check</em>, <a class="reference internal" href="#c.uv_check_cb" title="uv_check_cb">uv_check_cb</a><em>&nbsp;cb</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_check_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start the handle with the given callback.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_check_stop">
+int <code class="descname">uv_check_stop</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_check_t" title="uv_check_t">uv_check_t</a>*<em>&nbsp;check</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_check_stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop the handle, the callback will no longer be called.</p>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">The <a class="reference internal" href="handle.html#c.uv_handle_t" title="uv_handle_t"><code class="xref c c-type docutils literal"><span class="pre">uv_handle_t</span></code></a> API functions also apply.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="docutils literal"><span class="pre">uv_check_t</span></code> &#8212; Check handle</a><ul>
+<li><a class="reference internal" href="#data-types">Data types</a><ul>
+<li><a class="reference internal" href="#public-members">Public members</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api">API</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="prepare.html"
+                        title="previous chapter"><code class="docutils literal"><span class="pre">uv_prepare_t</span></code> &#8212; Prepare handle</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="idle.html"
+                        title="next chapter"><code class="docutils literal"><span class="pre">uv_idle_t</span></code> &#8212; Idle handle</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/check.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="idle.html" title="uv_idle_t — Idle handle"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="prepare.html" title="uv_prepare_t — Prepare handle"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright libuv contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>uv_signal_t — Signal handle &mdash; libuv API documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.4.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="libuv API documentation" href="index.html" />
+    <link rel="next" title="uv_process_t — Process handle" href="process.html" />
+    <link rel="prev" title="uv_poll_t — Poll handle" href="poll.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="process.html" title="uv_process_t — Process handle"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="poll.html" title="uv_poll_t — Poll handle"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="uv-signal-t-signal-handle">
+<span id="signal"></span><h1><a class="reference internal" href="#c.uv_signal_t" title="uv_signal_t"><code class="xref c c-type docutils literal"><span class="pre">uv_signal_t</span></code></a> &#8212; Signal handle<a class="headerlink" href="#uv-signal-t-signal-handle" title="Permalink to this headline">¶</a></h1>
+<p>Signal handles implement Unix style signal handling on a per-event loop bases.</p>
+<p>Reception of some signals is emulated on Windows:</p>
+<ul class="simple">
+<li>SIGINT is normally delivered when the user presses CTRL+C. However, like
+on Unix, it is not generated when terminal raw mode is enabled.</li>
+<li>SIGBREAK is delivered when the user pressed CTRL + BREAK.</li>
+<li>SIGHUP is generated when the user closes the console window. On SIGHUP the
+program is given approximately 10 seconds to perform cleanup. After that
+Windows will unconditionally terminate it.</li>
+<li>SIGWINCH is raised whenever libuv detects that the console has been
+resized. SIGWINCH is emulated by libuv when the program uses a <a class="reference internal" href="tty.html#c.uv_tty_t" title="uv_tty_t"><code class="xref c c-type docutils literal"><span class="pre">uv_tty_t</span></code></a>
+handle to write to the console. SIGWINCH may not always be delivered in a
+timely manner; libuv will only detect size changes when the cursor is
+being moved. When a readable <a class="reference internal" href="tty.html#c.uv_tty_t" title="uv_tty_t"><code class="xref c c-type docutils literal"><span class="pre">uv_tty_t</span></code></a> handle is used in raw mode,
+resizing the console buffer will also trigger a SIGWINCH signal.</li>
+</ul>
+<p>Watchers for other signals can be successfully created, but these signals
+are never received. These signals are: <cite>SIGILL</cite>, <cite>SIGABRT</cite>, <cite>SIGFPE</cite>, <cite>SIGSEGV</cite>,
+<cite>SIGTERM</cite> and <cite>SIGKILL.</cite></p>
+<p>Calls to raise() or abort() to programmatically raise a signal are
+not detected by libuv; these will not trigger a signal watcher.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">On Linux SIGRT0 and SIGRT1 (signals 32 and 33) are used by the NPTL pthreads library to
+manage threads. Installing watchers for those signals will lead to unpredictable behavior
+and is strongly discouraged. Future versions of libuv may simply reject them.</p>
+</div>
+<div class="section" id="data-types">
+<h2>Data types<a class="headerlink" href="#data-types" title="Permalink to this headline">¶</a></h2>
+<dl class="type">
+<dt id="c.uv_signal_t">
+<code class="descname">uv_signal_t</code><a class="headerlink" href="#c.uv_signal_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Signal handle type.</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="c.uv_signal_cb">
+void <code class="descname">(*uv_signal_cb)</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_signal_t" title="uv_signal_t">uv_signal_t</a>*<em>&nbsp;handle</em>, int<em>&nbsp;signum</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_signal_cb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type definition for callback passed to <a class="reference internal" href="#c.uv_signal_start" title="uv_signal_start"><code class="xref c c-func docutils literal"><span class="pre">uv_signal_start()</span></code></a>.</p>
+</dd></dl>
+
+<div class="section" id="public-members">
+<h3>Public members<a class="headerlink" href="#public-members" title="Permalink to this headline">¶</a></h3>
+<dl class="member">
+<dt id="c.uv_signal_t.signum">
+int <code class="descname">uv_signal_t.signum</code><a class="headerlink" href="#c.uv_signal_t.signum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Signal being monitored by this handle. Readonly.</p>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">The <a class="reference internal" href="handle.html#c.uv_handle_t" title="uv_handle_t"><code class="xref c c-type docutils literal"><span class="pre">uv_handle_t</span></code></a> members also apply.</p>
+</div>
+</div>
+</div>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="c.uv_signal_init">
+int <code class="descname">uv_signal_init</code><span class="sig-paren">(</span><a class="reference internal" href="loop.html#c.uv_loop_t" title="uv_loop_t">uv_loop_t</a>*, <a class="reference internal" href="#c.uv_signal_t" title="uv_signal_t">uv_signal_t</a>*<em>&nbsp;signal</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_signal_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the handle.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_signal_start">
+int <code class="descname">uv_signal_start</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_signal_t" title="uv_signal_t">uv_signal_t</a>*<em>&nbsp;signal</em>, <a class="reference internal" href="#c.uv_signal_cb" title="uv_signal_cb">uv_signal_cb</a><em>&nbsp;cb</em>, int<em>&nbsp;signum</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_signal_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start the handle with the given callback, watching for the given signal.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.uv_signal_stop">
+int <code class="descname">uv_signal_stop</code><span class="sig-paren">(</span><a class="reference internal" href="#c.uv_signal_t" title="uv_signal_t">uv_signal_t</a>*<em>&nbsp;signal</em><span class="sig-paren">)</span><a class="headerlink" href="#c.uv_signal_stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop the handle, the callback will no longer be called.</p>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">The <a class="reference internal" href="handle.html#c.uv_handle_t" title="uv_handle_t"><code class="xref c c-type docutils literal"><span class="pre">uv_handle_t</span></code></a> API functions also apply.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="docutils literal"><span class="pre">uv_signal_t</span></code> &#8212; Signal handle</a><ul>
+<li><a class="reference internal" href="#data-types">Data types</a><ul>
+<li><a class="reference internal" href="#public-members">Public members</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api">API</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="poll.html"
+                        title="previous chapter"><code class="docutils literal"><span class="pre">uv_poll_t</span></code> &#8212; Poll handle</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="process.html"
+                        title="next chapter"><code class="docutils literal"><span class="pre">uv_process_t</span></code> &#8212; Process handle</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/signal.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="process.html" title="uv_process_t — Process handle"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="poll.html" title="uv_poll_t — Poll handle"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">libuv 1.4.2 API documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright libuv contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b3.
+    </div>
+  </body>
+</html>
