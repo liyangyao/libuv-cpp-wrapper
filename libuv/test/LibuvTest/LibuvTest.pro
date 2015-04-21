@@ -17,8 +17,8 @@ TEMPLATE = app
 
 SOURCES += main.cpp
 
-INCLUDEPATH += $$PWD/../../../../thirdparty
-LIBS += -L$$PWD/../../../../thirdparty
+INCLUDEPATH += $$PWD/../../..
+LIBS += -L$$PWD/../../..
 
 DEFINES += WINVER=0x0600 _WIN32_WINNT=0x0600
 LIBS += -llibuv/lib/libuv -lws2_32 -ladvapi32 -lpsapi -liphlpapi

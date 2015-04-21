@@ -7,6 +7,7 @@ Date: 2015/4/18
 
 #include <QCoreApplication>
 #include <libuv/include/uv.h>
+#include <libuv/wrapper/eventloop.h>
 
 int round = 0;
 
@@ -20,14 +21,16 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    printf("uv version %s\n", uv_version_string());
+    printf("uv version is %s\n", uv_version_string());
 
-    uv_loop_t *loop = uv_loop_new();
+    LibuvWrapper::EventLoop loop;
+    //uv_loop_t *loop = uv_loop_new();
 
     uv_timer_t t;
-    uv_timer_init(loop, &t);
+    uv_timer_init(loop.loop(), &t);
     uv_timer_start(&t, timer_cb, 1000, 1000);
-    uv_run(loop, UV_RUN_DEFAULT);
+    //uv_run(loop, UV_RUN_DEFAULT);
+    loop.exec();
 
     return a.exec();
 }

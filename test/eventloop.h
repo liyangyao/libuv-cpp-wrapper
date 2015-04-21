@@ -1,7 +1,7 @@
 /****************************************************************************
 
 Creator: liyangyao@gmail.com
-Date: 4/19/2015
+Date: 2015/4/19
 
 ****************************************************************************/
 
@@ -11,19 +11,25 @@ Date: 4/19/2015
 #include <libuv/include/uv.h>
 #include <QObject>
 
-namespace LibuvWrapper{
+namespace libuv{
 
-class EventLoop
+class Loop
 {
 public:
-    explicit EventLoop();
-    ~EventLoop();
+    explicit loop()
+    {
+         uv_loop_init(&m_loop);
+    }
+    void run()
+    {
+        uv_run(&m_loop, UV_RUN_DEFAULT);
+    }
+    void close()
+    {
+        uv_loop_close(&m_loop);
+    }
 
-    void exec();
-
-    void quit();
-
-    uv_loop_t *loop()
+    uv_loop_t *handle()
     {
         return &m_loop;
     }
@@ -35,4 +41,3 @@ private:
 }
 
 #endif // EVENTLOOP_H
-
