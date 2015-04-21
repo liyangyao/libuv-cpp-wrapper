@@ -12,6 +12,7 @@ Date: 2015/4/20
 #include "idle.h"
 #include "timer.h"
 #include "tcp.h"
+#include "dns.h"
 
 class UvRunThread:public QThread
 {
@@ -39,6 +40,12 @@ private:
     }
 
 
+    void onConnect(uv::Tcp* tcp, int status)
+    {
+        tcp->read_start();
+        tcp->write("GET / HTTP/1.1\r\nContent-Length: 0\r\n\r\n", nullptr);
+    }
+
 
     void run()
     {
@@ -46,12 +53,14 @@ private:
         uv::Idle idle(&loop);
         uv::Timer timer(&loop);
         uv::Tcp tcp(&loop);
-        tcp.connect("111.13.100.91", 80, [](bool connected)
-        {
-            qDebug()<<"Connected:"<<connected;
-        });
+        //tcp.connect("111.13.100.91", 80, std::bind(&UvRunThread::onConnect, this, &tcp, std::placeholders::_1));
         timer.start(std::bind(&UvRunThread::onTimer, this, &loop, &timer), 1000, 1000);
-        idle.start(std::bind(&UvRunThread::onIdle, this, &loop, &idle));
+        //idle.start(std::bind(&UvRunThread::onIdle, this, &loop, &idle));
+        uv::Dns dns;
+        dns.resolve(&loop, "www.baidu.com", nullptr);
+
+
+
         loop.run();
     }
 };

@@ -28,4 +28,4 @@ HEADERS += \
     tcp.h \
     handle.h \
     stream.h \
-    buf.h
+    dns.h

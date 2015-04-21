@@ -20,7 +20,7 @@ using std::function;
 
 namespace{
 typedef function<void()> Callback;
-typedef function<void(bool connected)> ConnectCallback;
+typedef function<void(int status)> RequestCallback;
 }
 
 #endif // UVQT_H
