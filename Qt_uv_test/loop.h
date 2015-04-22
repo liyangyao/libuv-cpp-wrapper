@@ -61,24 +61,13 @@ public:
 
     void queueInLoop(const Functor &functor)
     {
-        Handle<uvpp_async_t> *async = new Handle<uvpp_async_t>;
-        async->get()->functor = functor;
-        uv_async_init(&m_loop, &async->get()->handle, on_async_cb);
-        uv_async_send(&async->get()->handle);
+        m_functors.push_back(functor);
     }
 
 private:
     uv_loop_t m_loop;
-    static void on_async_cb(uv_async_t* handle)
-    {
-        Handle<uvpp_async_t> *async = reinterpret_cast<Handle<uvpp_async_t> *>
-                (handle->data);
-        if (async->get()->functor)
-        {
-            async->get()->functor();
-        }
-        delete async;
-    }
+    std::vector<Functor> m_functors;
+
     DISABLE_COPY(Loop)
 };
 }

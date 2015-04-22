@@ -14,7 +14,9 @@ Date: 2015/4/20
 #include "tcp.h"
 #include "dns.h"
 #include "async.h"
+#include "loopex.h"
 
+uv::Loop *g_loop;
 class UvRunThread:public QThread
 {
 private:
@@ -80,15 +82,16 @@ private:
 
     void run()
     {
-        uv::Loop loop;
-        uv::Idle idle(&loop);
-        uv::Timer timer(&loop);
-        uv::Tcp tcp(&loop);
-        uv_prepare_t prepare;
+        uv::LoopEx loop;
+        g_loop = &loop;
+//        uv::Idle idle(&loop);
+//        uv::Timer timer(&loop);
+//        uv::Tcp tcp(&loop);
+//        uv_prepare_t prepare;
 //        uv_prepare_init(loop.handle(), &prepare);
 //        uv_prepare_start(&prepare, prepare_cb);
         //tcp.connect("111.13.100.91", 80, std::bind(&UvRunThread::onConnect, this, &tcp, std::placeholders::_1));
-        timer.start(std::bind(&UvRunThread::onTimer, this, &loop, &timer), 1000, 1000);
+  //      timer.start(std::bind(&UvRunThread::onTimer, this, &loop, &timer), 1000, 1000);
         //idle.start(std::bind(&UvRunThread::onIdle, this, &loop, &idle));
         //uv::Dns dns;
         //dns.resolve(&loop, "www.baidu.com", nullptr);
@@ -105,8 +108,9 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
     UvRunThread thread;
     thread.start();
+
+
     thread.wait();
-    qDebug()<<"thread end";
 
     return a.exec();
 }

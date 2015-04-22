@@ -29,4 +29,5 @@ HEADERS += \
     stream.h \
     dns.h \
     async.h \
-    uvpp.h
+    uvpp.h \
+    loopex.h
