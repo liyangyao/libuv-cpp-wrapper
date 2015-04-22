@@ -8,7 +8,7 @@ Date: 2015/4/20
 #ifndef IDLE_H
 #define IDLE_H
 
-#include "uvqt.h"
+#include "uvpp.h"
 #include "loop.h"
 #include "handle.h"
 
@@ -20,18 +20,18 @@ public:
     explicit Idle(Loop *loop):
         Handle<uv_idle_t>()
     {
-        uv_idle_init(loop->handle(), ptr());
+        uv_idle_init(loop->handle(), get());
     }
 
     void start(const Callback& cb)
     {
         m_callback = cb;
-        uv_idle_start(ptr(), on_idle_cb);
+        uv_idle_start(get(), on_idle_cb);
     }
 
     void stop()
     {
-        uv_idle_stop(ptr());
+        uv_idle_stop(get());
         m_callback = nullptr;
     }
 
@@ -45,6 +45,7 @@ private:
             _this->m_callback();
         }
     }
+    DISABLE_COPY(Idle)
 };
 }
 

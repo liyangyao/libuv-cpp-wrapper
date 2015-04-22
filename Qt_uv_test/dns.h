@@ -7,14 +7,14 @@ Date: 2015/4/21
 
 #ifndef GETADDRINFO_H
 #define GETADDRINFO_H
-#include "uvqt.h"
+#include "uvpp.h"
 #include "loop.h"
 
 namespace uv{
 class Dns
 {
 public:
-    Dns()
+    explicit Dns()
     {
         hints.ai_family = PF_INET;
         hints.ai_socktype = SOCK_STREAM;
@@ -31,7 +31,8 @@ public:
 
     int resolve(Loop *loop, const char *node, const char *service)
     {
-        return uv_getaddrinfo(loop->handle(), &resolver, on_resolved, node, service, NULL);
+        return uv_getaddrinfo(loop->handle(), &resolver, on_resolved, node,
+                              service, NULL);
     }
 
 
@@ -49,7 +50,8 @@ private:
         }
     }
 
-    static void on_resolved(uv_getaddrinfo_t *resolver, int status, struct addrinfo *info)
+    static void on_resolved(uv_getaddrinfo_t *resolver, int status,
+                            struct addrinfo *info)
     {
         Dns *_this = reinterpret_cast<Dns *>(resolver->data);
         _this->freeAddrInfo();
@@ -63,6 +65,7 @@ private:
 
 
     }
+    DISABLE_COPY(Dns)
 
 };
 }

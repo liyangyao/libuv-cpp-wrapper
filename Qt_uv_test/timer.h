@@ -8,7 +8,7 @@ Date: 2015/4/20
 #ifndef TIMER_H
 #define TIMER_H
 
-#include "uvqt.h"
+#include "uvpp.h"
 #include "loop.h"
 #include "handle.h"
 
@@ -20,18 +20,18 @@ public:
     explicit Timer(Loop *loop):
         Handle<uv_timer_t>()
     {
-        uv_timer_init(loop->handle(), ptr());
+        uv_timer_init(loop->handle(), get());
     }
 
     void start(const Callback& cb, uint64_t timeout, uint64_t repeat)
     {
         m_callback = cb;
-        uv_timer_start(ptr(), on_timer_cb, timeout, repeat);
+        uv_timer_start(get(), on_timer_cb, timeout, repeat);
     }
 
     void stop()
     {
-        uv_timer_stop(ptr());
+        uv_timer_stop(get());
         m_callback = nullptr;
     }
 
@@ -45,6 +45,7 @@ private:
             _this->m_callback();
         }
     }
+    DISABLE_COPY(Timer)
 };
 }
 

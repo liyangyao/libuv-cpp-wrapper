@@ -8,18 +8,17 @@ Date: 2015/4/20
 #ifndef HANDLE_H
 #define HANDLE_H
 
-#include "uvqt.h"
-#include "loop.h"
+#include "uvpp.h"
 
 namespace uv{
 
 template <class Type>class Handle
 {
 public:
-    Handle()
+    explicit Handle()
     {
         m_data = new Type;
-        m_data->data = this;
+        reinterpret_cast<uv_handle_t*>(m_data)->data = this;
     }
 
     virtual ~Handle()
@@ -28,7 +27,7 @@ public:
         close();
     }
 
-    Type *ptr()
+    Type *get()
     {
         return m_data;
     }
@@ -36,6 +35,16 @@ public:
     uv_handle_t *handle()
     {
         return reinterpret_cast<uv_handle_t*>(m_data);
+    }
+
+    int is_active()
+    {
+        return uv_is_active(handle());
+    }
+
+    int is_close()
+    {
+        return uv_is_closing(handle());
     }
 
     void close()
@@ -47,13 +56,29 @@ public:
         }
     }
 
+    void ref()
+    {
+        uv_ref(handle());
+    }
+
+    void unref()
+    {
+        uv_unref(handle());
+    }
+
+    int has_ref()
+    {
+        uv_has_ref(handle());
+    }
+
 private:
     Type *m_data;
     static void close_cb(uv_handle_t* handle)
     {
-        qDebug()<<"release handle";
-        delete handle;
+        Type* data = reinterpret_cast<Type *>(handle);
+        delete data;
     }
+    DISABLE_COPY(Handle)
 };
 }
 

@@ -8,17 +8,16 @@ Date: 2015/4/20
 #ifndef STREAM_H
 #define STREAM_H
 
-#include "uvqt.h"
+#include "uvpp.h"
 #include "loop.h"
 #include "handle.h"
 
 namespace uv{
 
-//template <class Handle>
 struct WriteRequest
 {
 public:
-    WriteRequest(const QByteArray &ba, const RequestCallback &cb):
+    explicit WriteRequest(const QByteArray &ba, const RequestCallback &cb):
          m_byteArray(ba),
          m_writeCallback(cb)
     {
@@ -27,7 +26,7 @@ public:
         m_req.data = this;
     }
 
-    uv_write_t *ptr()
+    uv_write_t *get()
     {
         return &m_req;
     }
@@ -47,6 +46,7 @@ private:
     uv_buf_t m_buf;
     QByteArray m_byteArray;
     RequestCallback m_writeCallback;
+    DISABLE_COPY(WriteRequest)
 };
 
 template <class Type> class Stream: public Handle<Type>
@@ -55,7 +55,7 @@ public:
     explicit Stream():
         Handle<Type>()
     {
-        m_stream = reinterpret_cast<uv_stream_t *>(ptr());
+        m_stream = reinterpret_cast<uv_stream_t *>(get());
     }
 
     int read_start()
@@ -63,10 +63,15 @@ public:
         return uv_read_start(m_stream, on_alloc_cb, on_read_cb);
     }
 
+    int read_stop()
+    {
+        return uv_read_stop(m_stream);
+    }
+
     int write(const QByteArray &ba, const RequestCallback &cb)
     {
         WriteRequest *wr = new WriteRequest(ba, cb);
-        return uv_write(wr->ptr(), m_stream, wr->buf(), 1, on_write_cb);
+        return uv_write(wr->get(), m_stream, wr->buf(), 1, on_write_cb);
     }
 
     uv_stream_t* stream()
@@ -77,8 +82,20 @@ public:
     void readyRead(QByteArray data)
     {
         qDebug()<<"readyRead:"<<data;
+        shutdown();
     }
 
+    int shutdown()
+    {
+        uv_shutdown_t* req = new uv_shutdown_t;
+        return uv_shutdown(req, m_stream, on_shutdown_cb);
+    }
+
+    int listen()
+    {
+        //todo:: callback
+        return uv_listen(m_stream, 128, on_connection_cb);
+    }
 
 private:
     uv_stream_t* m_stream;
@@ -113,8 +130,19 @@ private:
         {
             _this->close();
         }
+    }
+
+    static void on_shutdown_cb(uv_shutdown_t* req, int status)
+    {
+        delete req;
+        qDebug()<<"shutdown status="<<status;
+    }
+
+    static void on_connection_cb(uv_stream_t* server, int status)
+    {
 
     }
+    DISABLE_COPY(Stream)
 
 };
 }

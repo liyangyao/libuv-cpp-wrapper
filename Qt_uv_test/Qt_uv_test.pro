@@ -22,10 +22,11 @@ LIBS += -L$$PWD/.. -llibuv/lib/libuv -lws2_32 -ladvapi32 -lpsapi -liphlpapi
 
 HEADERS += \
     loop.h \
-    uvqt.h \
     idle.h \
     timer.h \
     tcp.h \
     handle.h \
     stream.h \
-    dns.h
+    dns.h \
+    async.h \
+    uvpp.h

@@ -18,9 +18,15 @@ using std::shared_ptr;
 using std::unique_ptr;
 using std::function;
 
+#define DISABLE_COPY(Class) \
+    Class(const Class &); \
+    Class &operator=(const Class &);
+
 namespace{
 typedef function<void()> Callback;
+typedef function<void()> Functor;
 typedef function<void(int status)> RequestCallback;
+
 }
 
 #endif // UVQT_H
