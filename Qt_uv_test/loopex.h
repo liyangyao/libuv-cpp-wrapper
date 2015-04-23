@@ -26,34 +26,31 @@ public:
     void queueInLoop(const Functor &functor)
     {
         m_functors.push_back(functor);
-        m_async.send([this]()
-        {
-            if (!m_functors.empty())
-            {
-                LoopEx* _this = this;
-                m_idle.start([_this]()
-                {
-                    if (m_functors.empty())
-                    {
-                        m_idle.stop();
-                    }
-                    else{
-                        Functor& f = m_functors.back();
-                        f();
-                        m_functors.pop_back();
-                    }
-                });
-            }
-            else{
-                m_idle.stop();
-            }
-        });
+        m_async.send(std::bind(&LoopEx::onAsync, this));
     }
 
 private:
     std::vector<Functor> m_functors;
     Idle m_idle;
     Async m_async;
+    void onAsync()
+    {
+        if (!m_functors.empty())
+        {
+            m_idle.start([this]()
+            {
+                if (m_functors.empty())
+                {
+                    m_idle.stop();
+                }
+                else{
+                    Functor& f = m_functors.back();
+                    f();
+                    m_functors.pop_back();
+                }
+            });
+        }
+    }
 };
 }
 

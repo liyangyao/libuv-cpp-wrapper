@@ -30,4 +30,5 @@ HEADERS += \
     dns.h \
     async.h \
     uvpp.h \
-    loopex.h
+    loopex.h \
+    thread.h

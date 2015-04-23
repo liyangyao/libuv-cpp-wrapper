@@ -15,6 +15,7 @@ Date: 2015/4/20
 #include "dns.h"
 #include "async.h"
 #include "loopex.h"
+#include "thread.h"
 
 uv::Loop *g_loop;
 class UvRunThread:public QThread
@@ -106,11 +107,20 @@ private:
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-    UvRunThread thread;
-    thread.start();
+//    UvRunThread thread;
+//    thread.start();
+
+    uv::Thread t([]
+    {
+        qDebug()<<"run in thread"<<GetCurrentThreadId();
+        Sleep(1000);
+    });
+    t.join();
+    qDebug()<<"after join"<<GetCurrentThreadId();
 
 
-    thread.wait();
+    //thread.wait();
+
 
     return a.exec();
 }
