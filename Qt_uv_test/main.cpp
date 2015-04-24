@@ -73,6 +73,8 @@ private:
     {
         tcp->read_start();
         tcp->write("GET / HTTP/1.1\r\nContent-Length: 0\r\n\r\n", nullptr);
+        uv_stream_t* s = tcp->get<uv_stream_t>();
+        tcp->listen();
     }
 
 //    static void prepare_cb(uv_prepare_t* handle)
@@ -117,6 +119,7 @@ int main(int argc, char *argv[])
     });
     t.join();
     qDebug()<<"after join"<<GetCurrentThreadId();
+
 
 
     //thread.wait();
