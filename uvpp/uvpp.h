@@ -22,7 +22,7 @@ using std::function;
     Class(const Class &); \
     Class &operator=(const Class &);
 
-namespace{
+namespace uv{
 typedef function<void()> Callback;
 typedef function<void()> Functor;
 typedef function<void(int status)> RequestCallback;

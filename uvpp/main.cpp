@@ -10,6 +10,8 @@ Date: 2015/4/24
 #include "uvpp.h"
 #include "thread.h"
 #include "tcp.h"
+#include <queue>
+#include <windows.h>
 
 void testServer()
 {
@@ -68,13 +70,99 @@ void testClient()
     //t.join();
 }
 
+namespace WorkerTest {
+uv_cond_t cond;
+uv_mutex_t mutex;
+
+
+int g_taskCount = 0;
+struct Task
+{
+    uv::Functor work;
+    uv::Functor done;
+    Task()
+    {
+        g_taskCount ++;
+    }
+    ~Task()
+    {
+        g_taskCount --;
+        qDebug()<<"Remain Task="<<g_taskCount;
+    }
+};
+typedef std::unique_ptr<Task> TaskPtr;
+
+std::queue<TaskPtr> wq;
+
+void init_once()
+{
+    uv_cond_init(&cond);
+    uv_mutex_init(&mutex);
+
+}
+
+void post(TaskPtr &task)
+{
+    uv_mutex_lock(&mutex);
+    wq.push(std::move(task));
+    uv_cond_signal(&cond);
+    uv_mutex_unlock(&mutex);
+}
+
+
+void newWorkThread()
+{
+    uv::Thread t([]()
+    {
+        while(true)
+        {
+            uv_mutex_lock(&mutex);
+            while(wq.empty())
+            {
+                uv_cond_wait(&cond, &mutex);
+            }
+            TaskPtr task;
+            task.swap(wq.front());
+            wq.pop();
+            uv_mutex_unlock(&mutex);
+            task->work();
+        }
+        //交还任务
+    });
+}
+
+void setup()
+{
+    init_once();
+    for(int i=0; i<1; i++)
+    {
+        newWorkThread();
+    }
+}
+
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-    testClient();
-    testServer();
+//    testClient();
+//    testServer();
 
-    qDebug()<<"after join";
+    WorkerTest::setup();
+    for(int i=1; i<=10; i++)
+    {
+        WorkerTest::TaskPtr t(new WorkerTest::Task);
+        t->work = [i]()
+        {
+            ::Sleep(1000);
+            qDebug()<<"run task "<<i<<"["<<GetCurrentThreadId()<<"]";
+        };
+        qDebug()<<"--->"<<i<<"["<<GetCurrentThreadId()<<"]";
+        WorkerTest::post(t);
+        ::Sleep(500);
+    }
+
+
 
     return a.exec();
 }
