@@ -23,7 +23,8 @@ HEADERS += \
     handle.h\
     stream.h\
     tcp.h \
-    thread.h
+    thread.h \
+    loopex.h
 
 INCLUDEPATH += $$PWD/../
 LIBS += -L$$PWD/.. -llibuv/lib/libuv -lws2_32 -ladvapi32 -lpsapi -liphlpapi

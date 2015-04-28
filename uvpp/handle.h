@@ -32,6 +32,12 @@ public:
         return m_uv_handle;
     }
 
+
+    HANDLE_T *ptr()
+    {
+        return m_uv_handle;
+    }
+
     template <typename T>
     T *get()
     {

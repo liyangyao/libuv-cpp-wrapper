@@ -47,7 +47,7 @@ public:
 
     void update_time()
     {
-        uv_update_time(&m_uv_loop);
+        uv_update_time(&m_uv_loop);        
     }
 
     uv_loop_t *handle()

@@ -12,6 +12,7 @@ Date: 2015/4/24
 #include "tcp.h"
 #include <queue>
 #include <windows.h>
+#include "loopex.h"
 
 void testServer()
 {
@@ -83,6 +84,7 @@ struct Task
     Task()
     {
         g_taskCount ++;
+
     }
     ~Task()
     {
@@ -140,14 +142,8 @@ void setup()
     }
 }
 
-}
-
-int main(int argc, char *argv[])
+void MainTest()
 {
-    QCoreApplication a(argc, argv);
-//    testClient();
-//    testServer();
-
     WorkerTest::setup();
     for(int i=1; i<=10; i++)
     {
@@ -161,6 +157,51 @@ int main(int argc, char *argv[])
         WorkerTest::post(t);
         ::Sleep(500);
     }
+}
+}
+
+namespace vvv{
+uv_async_t done_async;
+void init()
+{
+
+}
+}
+
+namespace TestLoopEx {
+    uv::LoopEx* g_loopEx = nullptr;
+    void setup()
+    {
+        uv::Thread t([]()
+        {
+            uv::LoopEx lp;
+            g_loopEx = &lp;
+            lp.run();
+        });
+    }
+
+    void mainTest()
+    {
+        TestLoopEx::setup();
+        qDebug()<<"Go!";
+        ::Sleep(1000);
+        qDebug()<<"call queueInLoop"<<"["<<GetCurrentThreadId()<<"]";
+        for(int i=0; i<5; i++)
+        {
+            TestLoopEx::g_loopEx->queueInLoop([]()
+            {
+                qDebug()<<"Yes! "<<"["<<GetCurrentThreadId()<<"]";;
+            });
+        }
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    QCoreApplication a(argc, argv);
+    TestLoopEx::mainTest();
+
+
 
 
 
