@@ -61,6 +61,11 @@ public:
         return http_errno_description((http_errno)m_parser.http_errno);
     }
 
+    bool keepAlive()
+    {
+        return http_should_keep_alive(&m_parser);
+    }
+
     HttpCallback onMessageBegin;
     HttpDataCallback onUrl;
     HttpDataCallback onHeaderField;

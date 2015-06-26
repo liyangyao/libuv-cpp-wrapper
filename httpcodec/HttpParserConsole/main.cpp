@@ -39,15 +39,16 @@ int main(int argc, char *argv[])
     //    }
 
     {
-        QByteArray d(
-                    "GET /chat HTTP/1.1\r\n"
-                    "Host: server.example.com\r\n"
-                    "Upgrade: websocket\r\n"
-                    "Connection: Upgrade\r\n"
-                    "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                    "Origin: http://example.com\r\n"
-                    "Sec-WebSocket-Protocol: chat, superchat\r\n"
-                    "Sec-WebSocket-Version: 13\r\n\n");
+        QByteArray d("GET / HTTP/1.1\r\nContent-Length: 5\r\nConnection: close\r\n\r\nHello");
+//        QByteArray d(
+//                    "GET /chat HTTP/1.1\r\n"
+//                    "Host: server.example.com\r\n"
+//                    "Upgrade: websocket\r\n"
+//                    "Connection: Upgrade\r\n"
+//                    "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+//                    "Origin: http://example.com\r\n"
+//                    "Sec-WebSocket-Protocol: chat, superchat\r\n"
+//                    "Sec-WebSocket-Version: 13\r\n\n");
 
         int n = hp.execute(d.constData(), d.length());
         if (n==d.length())
@@ -55,6 +56,7 @@ int main(int argc, char *argv[])
             qDebug()<<n;
             qDebug()<<"method:"<<hp.method();
             qDebug()<<"upgrade:"<<hp.upgrade();
+            qDebug()<<"keepAlive:"<<hp.keepAlive();
         }
         else{
             qDebug()<<"------ERROR---------";
