@@ -22,9 +22,6 @@ HEADERS += http_parser.h \
     BlockingQueue.h \
     HttpParser.h
 
-INCLUDEPATH += D:\workspace\Here\uvpp\libuv-cpp-wrapper\libuv\include
+include(D:\workspace\Here\uvpp\libuv-cpp-wrapper\libuv\libuv.pri)
 
-LIBS += -lD:\workspace\Here\uvpp\libuv-cpp-wrapper\libuv\lib\libuv
 
-DEFINES += WINVER=0x0600 _WIN32_WINNT=0x0600
-LIBS += -lws2_32 -ladvapi32 -lpsapi -liphlpapi

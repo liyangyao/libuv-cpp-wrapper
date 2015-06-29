@@ -45,7 +45,6 @@ public:
         {
             uv_cond_wait(&m_cond, &m_mutex);
         }
-        //T front(m_queue.front());
         T front(std::move(m_queue.front()));
         m_queue.pop_front();
         uv_mutex_unlock(&m_mutex);
