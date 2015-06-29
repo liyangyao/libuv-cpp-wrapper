@@ -8,7 +8,50 @@ Date: 2015/6/24
 #include <QCoreApplication>
 
 #include <QDebug>
+#include <QThread>
 #include "httpparser.h"
+#include "BlockingQueue.h"
+
+BlockingQueue<QString> q;
+
+class ThreadA:public QThread
+{
+    void run()
+    {
+        while(true)
+        {
+            QString s = q.take();
+            qDebug()<<"take:"<<s;
+            ::Sleep(1500);
+        }
+    }
+};
+
+class ThreadB:public QThread
+{
+    void run()
+    {
+        int n = 0;
+        while(true)
+        {
+            QString s = QString("Round %1").arg(n);
+            qDebug()<<"pus:"<<s;
+            q.put(s);
+            ::Sleep(1000);
+            n++;
+            if (n==10)
+            {
+                break;
+            }
+        }
+    }
+};
+
+void testBQ()
+{
+    (new ThreadA)->start();
+    (new ThreadB)->start();
+}
 
 
 int main(int argc, char *argv[])
@@ -63,6 +106,9 @@ int main(int argc, char *argv[])
             qDebug()<<hp.httpError();
         }
     }
+
+    testBQ();
+
 
 
     return a.exec();
