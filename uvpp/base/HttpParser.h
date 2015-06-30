@@ -9,7 +9,8 @@ Date: 2015/6/25
 #define HTTPPARSER_H
 
 #include <functional>
-#include <http_parser.h>
+#include <memory>
+#include <http-parser/http_parser.h>
 
 class HttpParser
 {
