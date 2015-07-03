@@ -1,4 +1,4 @@
-INCLUDEPATH += $$PWD/include
+INCLUDEPATH += $$PWD/..
 
 LIBS += -l$$PWD/lib/libuv
 

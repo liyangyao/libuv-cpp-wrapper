@@ -12,9 +12,11 @@ Date: 2015/4/20
 #include "loop.h"
 #include "handle.h"
 #include "stream.h"
+#include <QDebug>
 
 namespace uv{
 
+template <typename ContextType>
 class Tcp: public Stream<uv_tcp_t>
 {
 public:
@@ -22,6 +24,11 @@ public:
         Stream<uv_tcp_t>()
     {
         uv_tcp_init(loop->handle(), get());
+    }
+
+    ~Tcp()
+    {
+        qDebug()<<"~Tcp";
     }
 
     int nodelay(int enable)
@@ -57,9 +64,20 @@ public:
                            (&addr), 0);
     }
 
+    ContextType context()
+    {
+        return m_context;
+    }
+
+    void setContext(const ContextType &context)
+    {
+        m_context = context;
+    }
+
 private:
     unique_ptr<uv_connect_t> m_connect_req;
     RequestCallback m_connectCallback;
+    ContextType m_context;
 
     static void on_connect_cb(uv_connect_t* req, int status)
     {

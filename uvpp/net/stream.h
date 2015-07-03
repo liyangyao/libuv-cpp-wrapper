@@ -71,6 +71,7 @@ public:
 
     int read_stop()
     {
+        m_readCallback = nullptr;
         return uv_read_stop(get<uv_stream_t>());
     }
 
