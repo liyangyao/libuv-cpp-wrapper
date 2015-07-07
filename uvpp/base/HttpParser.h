@@ -67,6 +67,11 @@ public:
         return http_should_keep_alive(&m_parser);
     }
 
+    uint32_t nread()
+    {
+        return m_parser.nread;
+    }
+
     HttpCallback onMessageBegin;
     HttpDataCallback onUrl;
     HttpDataCallback onHeaderField;
