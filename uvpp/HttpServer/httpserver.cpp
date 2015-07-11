@@ -9,6 +9,8 @@ Date: 2015/7/3
 #include <QDebug>
 #include <QDateTime>
 #include "respon.h"
+#include "timer.h"
+#include "async.h"
 
 HttpServer::HttpServer():
     m_loop(),
@@ -19,6 +21,22 @@ HttpServer::HttpServer():
 
 void HttpServer::start(int port)
 {
+    uv::Timer* timer = new uv::Timer(&m_loop);
+    timer->start([=](){
+        static int round = 0;
+        round++;
+        qDebug()<<"Timer round:"<<round;
+
+        if (round==5)
+        {
+            uv::Async* async = new uv::Async(&m_loop,[=]()
+            {
+                qDebug()<<"Delete Timer";
+                delete timer;
+            });
+            async->send();
+        }
+    }, 1000, 1000);
     qDebug()<<"HttpServer::start port="<<port;
     m_tcpServer.bind("0.0.0.0", port);
     m_tcpServer.listen(std::bind(&HttpServer::onNewConnection, this, std::placeholders::_1));
