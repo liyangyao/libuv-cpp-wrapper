@@ -11,6 +11,8 @@ Date: 2015/7/3
 #include "respon.h"
 #include "timer.h"
 #include "async.h"
+#include "thread.h"
+#include <QMutexLocker>
 
 HttpServer::HttpServer():
     m_loop(),
@@ -19,8 +21,24 @@ HttpServer::HttpServer():
     qDebug()<<"HttpServer::HttpServer";
 }
 
+uv::Key<int> global_int;
+
 void HttpServer::start(int port)
 {
+
+    global_int.set(100);
+    qDebug()<<"Value="<< global_int.get();
+    qDebug()<<"current tid="<<GetCurrentThreadId();
+    uv::Thread* thread = new uv::Thread;
+    thread->create([=]()
+    {
+        int v = global_int.get();
+        global_int.set(v+1);
+        qDebug()<<"THREAD Value="<<v ;
+
+       qDebug()<<"1Run in new Thread tid="<<GetCurrentThreadId();
+    });
+
     uv::Timer* timer = new uv::Timer(&m_loop);
     timer->start([=](){
         static int round = 0;
