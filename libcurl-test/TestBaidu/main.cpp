@@ -18,6 +18,9 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     Widget w;
     w.show();
+
+
+
 //    QCurl u("www.baidu.com", 80);
 //    u.setTimeout(3);
 //    if (u.get("/"))
@@ -38,6 +41,7 @@ int main(int argc, char *argv[])
         qDebug()<<QByteArray::fromRawData(ptr, length);
     });
     request.setopt_timeout(5);
+    request.setopt_accept_encoding("gzip");
     if (!request.perform())
     {
         qDebug()<<"Error:"<<request.lastError();
@@ -48,6 +52,7 @@ int main(int argc, char *argv[])
 
 
     qDebug()<<"===========================================";
+    qDebug()<< curl_version();
 
 
 

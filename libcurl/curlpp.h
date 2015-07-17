@@ -116,6 +116,14 @@ public:
         return m_lastError==CURLE_OK;
     }
 
+
+
+    bool setopt_accept_encoding(const char* acceptEncoding)
+    {
+        m_lastError = curl_easy_setopt(m_handle, CURLOPT_ACCEPT_ENCODING, acceptEncoding);
+        return m_lastError==CURLE_OK;
+    }
+
     bool setopt_timeout(int second)
     {
         m_lastError = curl_easy_setopt(m_handle, CURLOPT_TIMEOUT, second);
