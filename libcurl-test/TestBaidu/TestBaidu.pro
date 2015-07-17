@@ -21,8 +21,8 @@ HEADERS  += widget.h\
 
 FORMS    += widget.ui
 
-INCLUDEPATH += D:\workspace\Here\uvpp\libuv-cpp-wrapper
-LIBS += -LD:\workspace\Here\uvpp\libuv-cpp-wrapper
+INCLUDEPATH += $$PWD/../..
+LIBS += -L$$PWD/../..
 
 DEFINES += CURL_STATICLIB
 LIBS += -lws2_32 -lwinmm -lwldap32 -lAdvapi32 -llibcurl/static_lib/libcurl
