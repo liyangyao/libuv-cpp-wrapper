@@ -14,6 +14,14 @@ Date: 2015/4/7
 #include <libcurl/curlpp.h>
 #include <windows.h>
 
+enum class Enumeration
+{
+  Val1,
+  Val2,
+  Val3 = 100,
+  Val4 /* = 101 */,
+};
+
 void testGet()
 {
     curl::Easy request;
