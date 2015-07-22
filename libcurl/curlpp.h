@@ -110,7 +110,7 @@ public:
         return m_lastError==CURLE_OK;
     }
 
-    bool setopt_post_fields(char *postdata)
+    bool setopt_post_fields(const char *postdata)
     {
         m_lastError = curl_easy_setopt(m_handle, CURLOPT_POSTFIELDS, postdata);
         return m_lastError==CURLE_OK;

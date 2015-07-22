@@ -10,6 +10,7 @@ Date: 2015/7/18
 #include <QDebug>
 #include <unordered_map>
 #include <queue>
+#include <QTextCodec>
 //#include "any.h"
 
 
@@ -245,6 +246,7 @@ public:
 
     void queueInLoop(const Functor &functor)
     {
+        qDebug()<<"call queueInLoop";
         uv_mutex_lock(&m_functor_mutex);
         m_functors.push(functor);
         uv_mutex_unlock(&m_functor_mutex);
@@ -265,8 +267,8 @@ private:
             uv_mutex_lock(&m_functor_mutex);
             if (!m_functors.empty())
             {
-                 fun.swap(m_functors.front());
-                 m_functors.pop();
+                fun.swap(m_functors.front());
+                m_functors.pop();
             }
             uv_mutex_unlock(&m_functor_mutex);
             if (fun)
@@ -318,7 +320,7 @@ typedef shared_ptr<Connection> ConnectionPtr;
 class TcpServer
 {
 public:
-    TcpServer(Loop* loop):
+    TcpServer(LoopEx* loop):
         m_loop(loop),
         m_tcpServer(loop)
     {
@@ -336,7 +338,7 @@ public:
     }
 
 private:
-    Loop* m_loop;
+    LoopEx* m_loop;
     Tcp m_tcpServer;
     std::unordered_map<int, ConnectionPtr> m_connections;
     ReadCallback m_readCallback;
@@ -345,36 +347,35 @@ private:
     {
         ConnectionPtr connection(new Connection(m_loop));
         m_connections.insert(std::make_pair(connection->id(), connection));
-       //Tcp* connection = new Tcp(m_loop);
-       m_tcpServer.accept(connection.get());
+        //Tcp* connection = new Tcp(m_loop);
+        m_tcpServer.accept(connection.get());
 
-        connection->setCloseCallback(std::bind(&TcpServer::onConnectionClose, this, connection.get()));
+        connection->setCloseCallback(std::bind(&TcpServer::onConnectionClose, this, connection));
         connection->read_start(m_readCallback);
         qDebug()<<"onNewConnection END";
     }
 
-    void onConnectionClose(Connection* connection)
+    void onConnectionClose(const ConnectionPtr &connection)
     {
-        qDebug()<<"onConnectionClose";
+        qDebug()<<"#1";
+        m_loop->queueInLoop([connection]()
+        {
+            qDebug()<<"Run in loop";
+        });
+        qDebug()<<"#2";
+
+        qDebug()<<"onConnectionClose Chang#1";
         m_connections.erase(connection->id());
-        //qDebug()<<"usecount="<< connection.use_count();
-
-        //qDebug()<<"usecount="<< connection.use_count();
-        auto it = m_connections.find(connection->id());
-        ConnectionPtr ptr =  (*it).second();
-//        m_loop->queueInLoop([this, ptr]()
-//        {
-
-//        });
-
+        connection->setCloseCallback(nullptr);
     }
 };
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
 
-    Loop loop;
+    LoopEx loop;
     TcpServer server(&loop);
     server.listen("0.0.0.0", 80);
     server.setMessageCallback([](QByteArray d)
