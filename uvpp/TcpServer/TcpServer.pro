@@ -17,8 +17,8 @@ TEMPLATE = app
 
 SOURCES += main.cpp
 
-include(D:\workspace\project\libuv-cpp-wrapper\libuv\libuv.pri)
-INCLUDEPATH += D:\workspace\project\libuv-cpp-wrapper
+include(..\..\libuv\libuv.pri)
+INCLUDEPATH += ..\..\libuv-cpp-wrapper
 
 HEADERS += \
     libuvpp.h

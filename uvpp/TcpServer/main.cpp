@@ -8,6 +8,8 @@ Date: 2015/7/18
 #include <QCoreApplication>
 #include "libuvpp.h"
 #include <QDebug>
+#include <unordered_map>
+#include <queue>
 //#include "any.h"
 
 
@@ -15,101 +17,101 @@ namespace cdiggins
 {
 namespace anyimpl
 {
-    struct bad_any_cast
-    {
-    };
+struct bad_any_cast
+{
+};
 
-    struct empty_any
-    {
-    };
+struct empty_any
+{
+};
 
-    struct base_any_policy
-    {
-        virtual void static_delete(void** x) = 0;
-        virtual void copy_from_value(void const* src, void** dest) = 0;
-        virtual void clone(void* const* src, void** dest) = 0;
-        virtual void move(void* const* src, void** dest) = 0;
-        virtual void* get_value(void** src) = 0;
-        virtual size_t get_size() = 0;
-    };
+struct base_any_policy
+{
+    virtual void static_delete(void** x) = 0;
+    virtual void copy_from_value(void const* src, void** dest) = 0;
+    virtual void clone(void* const* src, void** dest) = 0;
+    virtual void move(void* const* src, void** dest) = 0;
+    virtual void* get_value(void** src) = 0;
+    virtual size_t get_size() = 0;
+};
 
-    template<typename T>
-    struct typed_base_any_policy : base_any_policy
-    {
-        virtual size_t get_size() { return sizeof(T); }
-    };
+template<typename T>
+struct typed_base_any_policy : base_any_policy
+{
+    virtual size_t get_size() { return sizeof(T); }
+};
 
-    template<typename T>
-    struct small_any_policy : typed_base_any_policy<T>
-    {
-        virtual void static_delete(void** x) { }
-        virtual void copy_from_value(void const* src, void** dest)
-            { new(dest) T(*reinterpret_cast<T const*>(src)); }
-        virtual void clone(void* const* src, void** dest) { *dest = *src; }
-        virtual void move(void* const* src, void** dest) { *dest = *src; }
-        virtual void* get_value(void** src) { return reinterpret_cast<void*>(src); }
-    };
+template<typename T>
+struct small_any_policy : typed_base_any_policy<T>
+{
+    virtual void static_delete(void** x) { }
+    virtual void copy_from_value(void const* src, void** dest)
+    { new(dest) T(*reinterpret_cast<T const*>(src)); }
+    virtual void clone(void* const* src, void** dest) { *dest = *src; }
+    virtual void move(void* const* src, void** dest) { *dest = *src; }
+    virtual void* get_value(void** src) { return reinterpret_cast<void*>(src); }
+};
 
-    template<typename T>
-    struct big_any_policy : typed_base_any_policy<T>
-    {
-        virtual void static_delete(void** x) { if (*x)
+template<typename T>
+struct big_any_policy : typed_base_any_policy<T>
+{
+    virtual void static_delete(void** x) { if (*x)
             delete(*reinterpret_cast<T**>(x)); *x = NULL; }
-        virtual void copy_from_value(void const* src, void** dest) {
-           *dest = new T(*reinterpret_cast<T const*>(src)); }
-        virtual void clone(void* const* src, void** dest) {
-           *dest = new T(**reinterpret_cast<T* const*>(src)); }
-        virtual void move(void* const* src, void** dest) {
-          (*reinterpret_cast<T**>(dest))->~T();
-          **reinterpret_cast<T**>(dest) = **reinterpret_cast<T* const*>(src); }
-        virtual void* get_value(void** src) { return *src; }
-    };
+    virtual void copy_from_value(void const* src, void** dest) {
+        *dest = new T(*reinterpret_cast<T const*>(src)); }
+    virtual void clone(void* const* src, void** dest) {
+        *dest = new T(**reinterpret_cast<T* const*>(src)); }
+    virtual void move(void* const* src, void** dest) {
+        (*reinterpret_cast<T**>(dest))->~T();
+        **reinterpret_cast<T**>(dest) = **reinterpret_cast<T* const*>(src); }
+    virtual void* get_value(void** src) { return *src; }
+};
 
-    template<typename T>
-    struct choose_policy
-    {
-        typedef big_any_policy<T> type;
-    };
+template<typename T>
+struct choose_policy
+{
+    typedef big_any_policy<T> type;
+};
 
-    template<typename T>
-    struct choose_policy<T*>
-    {
-        typedef small_any_policy<T*> type;
-    };
+template<typename T>
+struct choose_policy<T*>
+{
+    typedef small_any_policy<T*> type;
+};
 
-    struct any;
+struct any;
 
-    /// Choosing the policy for an any type is illegal, but should never happen.
-    /// This is designed to throw a compiler error.
-    template<>
-    struct choose_policy<any>
-    {
-        typedef void type;
-    };
+/// Choosing the policy for an any type is illegal, but should never happen.
+/// This is designed to throw a compiler error.
+template<>
+struct choose_policy<any>
+{
+    typedef void type;
+};
 
-    /// Specializations for small types.
-    #define SMALL_POLICY(TYPE) template<> struct choose_policy<TYPE> { typedef small_any_policy<TYPE> type; };
+/// Specializations for small types.
+#define SMALL_POLICY(TYPE) template<> struct choose_policy<TYPE> { typedef small_any_policy<TYPE> type; };
 
-    SMALL_POLICY(signed char);
-    SMALL_POLICY(unsigned char);
-    SMALL_POLICY(signed short);
-    SMALL_POLICY(unsigned short);
-    SMALL_POLICY(signed int);
-    SMALL_POLICY(unsigned int);
-    SMALL_POLICY(signed long);
-    SMALL_POLICY(unsigned long);
-    SMALL_POLICY(float);
-    SMALL_POLICY(bool);
+SMALL_POLICY(signed char);
+SMALL_POLICY(unsigned char);
+SMALL_POLICY(signed short);
+SMALL_POLICY(unsigned short);
+SMALL_POLICY(signed int);
+SMALL_POLICY(unsigned int);
+SMALL_POLICY(signed long);
+SMALL_POLICY(unsigned long);
+SMALL_POLICY(float);
+SMALL_POLICY(bool);
 
-    #undef SMALL_POLICY
+#undef SMALL_POLICY
 
-    /// This function will return a different policy for each type.
-    template<typename T>
-    base_any_policy* get_policy()
-    {
-        static typename choose_policy<T>::type policy;
-        return &policy;
-    };
+/// This function will return a different policy for each type.
+template<typename T>
+base_any_policy* get_policy()
+{
+    static typename choose_policy<T>::type policy;
+    return &policy;
+};
 }
 
 struct any
@@ -230,69 +232,159 @@ public:
     }
 };
 
-//class any
-//{
-//public:
+class LoopEx:public Loop
+{
+public:
+    LoopEx():
+        Loop()
+    {
+        uv_mutex_init(&m_functor_mutex);
+        m_functor_async.get()->data = this;
+        uv_async_init(handle(), m_functor_async.get(), functor_async_cb);
+    }
 
-//    any() : content(nullptr) {}
+    void queueInLoop(const Functor &functor)
+    {
+        uv_mutex_lock(&m_functor_mutex);
+        m_functors.push(functor);
+        uv_mutex_unlock(&m_functor_mutex);
+        uv_async_send(m_functor_async.get());
+        qDebug()<<"after queueInLoop";
+    }
 
-//    any(const any& other) : content(other.content -> clone()) {}
 
-//    template<class T> any(const T& value) : content(new holder<T>(value))
-//    {
-//    }
+private:
+    std::queue<Functor> m_functors;
+    Handle<uv_async_t> m_functor_async;
+    uv_mutex_t m_functor_mutex;
+    void onFunctor()
+    {
+        while (true)
+        {
+            Functor fun = nullptr;
+            uv_mutex_lock(&m_functor_mutex);
+            if (!m_functors.empty())
+            {
+                 fun.swap(m_functors.front());
+                 m_functors.pop();
+            }
+            uv_mutex_unlock(&m_functor_mutex);
+            if (fun)
+            {
+                fun();
+            }
+            else{
+                break;
+            }
+        }
+    }
 
-//    ~any()
-//    {
-//        delete content;
-//    }
+    static void functor_async_cb(uv_async_t* handle)
+    {
+        qDebug()<<"functor_async_cb";
+        LoopEx *_this = reinterpret_cast<LoopEx *>(handle->data);
+        _this->onFunctor();
+    }
+};
 
-//    class placeholder
-//    {
-//    public:
-//        placeholder() {}
-//        virtual placeholder* clone() const = 0;
-//    };
+class Connection:public Tcp
+{
+public:
+    Connection(Loop *loop):
+        Tcp(loop)
+    {
+        static int id = 0;
+        id++;
+        m_id = id;
+        qDebug()<<"Connection"<<m_id;
+    }
 
-//    template<class T> class holder : public placeholder
-//    {
-//    public:
-//        T content;
+    ~Connection()
+    {
+        qDebug()<<"~Connection"<<m_id;
+    }
 
-//        holder(const T& value) : content(value) {}
-//        ~holder() {}
+    int id()
+    {
+        return m_id;
+    }
 
-//        placeholder* clone() const
+private:
+    int m_id;
+};
+typedef shared_ptr<Connection> ConnectionPtr;
+
+
+class TcpServer
+{
+public:
+    TcpServer(Loop* loop):
+        m_loop(loop),
+        m_tcpServer(loop)
+    {
+
+    }
+    bool listen(const char *ip, int port)
+    {
+        m_tcpServer.bind(ip, port);
+        return m_tcpServer.listen(std::bind(&TcpServer::onNewConnection, this, std::placeholders::_1));
+    }
+
+    void setMessageCallback(const ReadCallback &cb)
+    {
+        m_readCallback = cb;
+    }
+
+private:
+    Loop* m_loop;
+    Tcp m_tcpServer;
+    std::unordered_map<int, ConnectionPtr> m_connections;
+    ReadCallback m_readCallback;
+
+    void onNewConnection(int status)
+    {
+        ConnectionPtr connection(new Connection(m_loop));
+        m_connections.insert(std::make_pair(connection->id(), connection));
+       //Tcp* connection = new Tcp(m_loop);
+       m_tcpServer.accept(connection.get());
+
+        connection->setCloseCallback(std::bind(&TcpServer::onConnectionClose, this, connection.get()));
+        connection->read_start(m_readCallback);
+        qDebug()<<"onNewConnection END";
+    }
+
+    void onConnectionClose(Connection* connection)
+    {
+        qDebug()<<"onConnectionClose";
+        m_connections.erase(connection->id());
+        //qDebug()<<"usecount="<< connection.use_count();
+
+        //qDebug()<<"usecount="<< connection.use_count();
+        auto it = m_connections.find(connection->id());
+        ConnectionPtr ptr =  (*it).second();
+//        m_loop->queueInLoop([this, ptr]()
 //        {
-//            return new holder<T>(content);
-//        }
-//    };
 
-//    template<class T> operator T () const
-//    {
-//        return dynamic_cast<holder<T>*>(content)->content;
-//    }
+//        });
 
-//    placeholder* content;
-//};
+    }
+};
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+
     Loop loop;
-    Tcp tcp(&loop);
-
-//    A* aa = new A;
-//    void * p = (void *)aa;
-//    delete p;
-
+    TcpServer server(&loop);
+    server.listen("0.0.0.0", 80);
+    server.setMessageCallback([](QByteArray d)
     {
-       // cdiggins::any a2(std::shared_ptr<A>(new A));
-        cdiggins::any a = 42;
-        qDebug()<<a.cast<int>();
-        a = 3.14;
-        qDebug()<<a.cast<bool>();
-    }
+        qDebug()<<"recv";
+        qDebug()<<d;
+    });
+    qDebug()<<"begin run";
+    loop.run();
 
+    qDebug()<<"OVER";
     return a.exec();
 }

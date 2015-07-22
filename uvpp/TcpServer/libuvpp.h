@@ -12,6 +12,7 @@ Date: 2015/7/20
 #include <functional>
 #include <QObject>
 #include <libuv/include/uv.h>
+#include <QDebug>
 
 #define DISABLE_COPY(Class) \
     Class(const Class &); \
@@ -300,6 +301,7 @@ public:
     explicit Tcp(Loop *loop):
         Stream<uv_tcp_t>()
     {
+        //qDebug()<<"Tcp";
         uv_tcp_init(loop->handle(), get());
     }
 
