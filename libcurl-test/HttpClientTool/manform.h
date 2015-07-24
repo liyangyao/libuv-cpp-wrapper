@@ -34,6 +34,8 @@ private:
     void initRequest();
     void setInputDataVisible(bool visible);
     void onRespon(char *ptr, size_t length);
+    void serialize();
+    bool loadFromSerialize();
 };
 
 #endif // MANFORM_H
