@@ -11,6 +11,7 @@ Date: 2015/7/18
 #include <unordered_map>
 #include <queue>
 #include <QTextCodec>
+#include <QUuid>
 //#include "any.h"
 
 
@@ -73,8 +74,10 @@ private:
 class Connection:public std::enable_shared_from_this<Connection>
 {
 public:
-    typedef std::function<void(std::shared_ptr<Connection>)> CloseCallback;
     typedef std::shared_ptr<Connection> Ptr;
+    typedef std::function<void(const Ptr &)> Callback;
+    typedef std::function<void(const Ptr &, const QByteArray &)> MessageCallback;
+
     Connection(Loop *loop):
         m_tcp(loop)
     {
@@ -84,6 +87,7 @@ public:
         qDebug()<<"Connection"<<m_id;
 
         m_tcp.setCloseCallback(std::bind(&Connection::handleClose, this));
+
     }
 
     ~Connection()
@@ -96,17 +100,27 @@ public:
         return m_id;
     }
 
-    void setMessageCallback(const ReadCallback &cb)
-    {
-        m_tcp.read_start(cb);
-    }
-
-    CloseCallback closeCallback;
     Tcp* getTcp()
     {
         return &m_tcp;
     }
 
+    void connectionEstablished()
+    {
+        m_tcp.read_start(std::bind(&Connection::handleRead, this, std::placeholders::_1));
+    }
+
+    void connectionDestroyed()
+    {
+
+    }
+
+
+
+    Callback closeCallback;
+    MessageCallback messageCallback;
+
+    std::shared_ptr<void> context;
 private:
     Tcp m_tcp;
     int m_id;
@@ -116,8 +130,35 @@ private:
         Ptr guardThis(shared_from_this());
         closeCallback(guardThis);
     }
+
+    void handleRead(const QByteArray &data)
+    {
+        if (messageCallback)
+        {
+            messageCallback(shared_from_this(), data);
+        }
+    }
 };
 typedef std::shared_ptr<Connection> ConnectionPtr;
+
+class Session
+{
+public:
+    Session()
+    {
+        uuid = QUuid::createUuid().toString();
+        round = 0;
+        qDebug()<<"Session:"<<uuid;
+    }
+
+    ~Session()
+    {
+        qDebug()<<"~Session"<<uuid;
+    }
+
+    int round;
+    QString uuid;
+};
 
 
 class TcpServer
@@ -135,36 +176,48 @@ public:
         return m_tcpServer.listen(std::bind(&TcpServer::onNewConnection, this, std::placeholders::_1));
     }
 
-    void setMessageCallback(const ReadCallback &cb)
-    {
-        m_readCallback = cb;
-    }
+
+
+    typedef std::function<void(const ConnectionPtr &)> ConnectionCallback;
+    ConnectionCallback connectionCallback;
+    ConnectionCallback connectionCloseCallback;
+    Connection::MessageCallback messageCallback;
 
 private:
     LoopEx* m_loop;
     Tcp m_tcpServer;
     std::unordered_map<int, ConnectionPtr> m_connections;
-    ReadCallback m_readCallback;
+
 
     void onNewConnection(int status)
     {
         ConnectionPtr connection(new Connection(m_loop));
         m_tcpServer.accept(connection->getTcp());
+        connection->connectionEstablished();
 
         m_connections.insert(std::make_pair(connection->id(), connection));
         connection->closeCallback = std::bind(&TcpServer::onConnectionClose, this, std::placeholders::_1);
-        connection->setMessageCallback(m_readCallback);
+        connection->messageCallback = messageCallback;
         qDebug()<<"onNewConnection";
+        if (connectionCallback)
+        {
+            connectionCallback(connection);
+        }
     }
 
     void onConnectionClose(const ConnectionPtr &connection)
     {
-        //        m_loop->queueInLoop([connection]()
-        //        {
-        //            qDebug()<<"Loop destroy connection";
-        //        });
+        m_loop->queueInLoop([connection]()
+        {
+            qDebug()<<"Loop destroy connection";
+            connection->connectionDestroyed();
+        });
         m_connections.erase(connection->id());
         qDebug()<<"onConnectionClose";
+        if (connectionCloseCallback)
+        {
+            connectionCloseCallback(connection);
+        }
     }
 };
 
@@ -176,11 +229,28 @@ int main(int argc, char *argv[])
     LoopEx loop;
     TcpServer server(&loop);
     server.listen("0.0.0.0", 80);
-    server.setMessageCallback([](QByteArray d)
+    server.messageCallback = ([](const ConnectionPtr &connection, const QByteArray &d)
     {
-        qDebug()<<"recv";
-        qDebug()<<d;
+        std::shared_ptr<Session> session = std::static_pointer_cast<Session>(connection->context);
+        session->round++;
+        QByteArray respon = QString("%1 round=%2").arg(session->uuid).arg(session->round).toUtf8();
+        QString head = QString("HTTP/1.1 200 OK\r\nContent-Length: %1\r\n\r\n").arg(respon.size());
+        connection->getTcp()->write(head.toUtf8(), nullptr);
+        connection->getTcp()->write(respon, nullptr);
     });
+    server.connectionCallback = [](const ConnectionPtr &connection)
+    {
+        connection->context = std::shared_ptr<Session>(new Session);
+        qDebug()<<"connectionCallback";
+    };
+
+    server.connectionCloseCallback = [](const ConnectionPtr &connection)
+    {
+        std::shared_ptr<Session> session = std::static_pointer_cast<Session>(connection->context);
+
+        qDebug()<<"Session Close"<<session->uuid;
+    };
+
     qDebug()<<"begin run";
     loop.run();
 
