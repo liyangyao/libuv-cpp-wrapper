@@ -23,9 +23,8 @@ using std::unique_ptr;
 using std::function;
 
 typedef function<void()> Callback;
-typedef function<void()> Functor;
 typedef function<void(int status)> RequestCallback;
-typedef function<void(const QByteArray &data)> ReadCallback;
+typedef function<void(const QByteArray &data)> DataCallback;
 
 class Loop
 {
@@ -82,7 +81,7 @@ public:
     explicit Handle()
     {
         m_uv_handle = new HANDLE_T;
-        handle()->data = this;
+        uv_handle()->data = this;
     }
 
     virtual ~Handle()
@@ -90,18 +89,18 @@ public:
         close();
     }
 
-    uv_handle_t* handle()
+    uv_handle_t* uv_handle()
     {
         return reinterpret_cast<uv_handle_t *>(m_uv_handle);
     }
 
-    HANDLE_T *get()
+    HANDLE_T *handle()
     {
         return m_uv_handle;
     }
 
     template <typename T>
-    T *get()
+    T *handle()
     {
         return reinterpret_cast<T *>(m_uv_handle);
     }
@@ -120,24 +119,24 @@ public:
     {
         if (m_uv_handle)
         {
-            uv_close(get<uv_handle_t>(), close_cb);
+            uv_close(uv_handle(), close_cb);
             m_uv_handle = nullptr;
         }
     }
 
     void ref()
     {
-        uv_ref(handle());
+        uv_ref(uv_handle());
     }
 
     void unref()
     {
-        uv_unref(handle());
+        uv_unref(uv_handle());
     }
 
     int has_ref()
     {
-        uv_has_ref(handle());
+        uv_has_ref(uv_handle());
     }
 
 private:
@@ -196,37 +195,37 @@ public:
 
     int accept(Stream *client)
     {
-        return uv_accept(get<uv_stream_t>(), client->get<uv_stream_t>());
+        return uv_accept(handle<uv_stream_t>(), client->handle<uv_stream_t>());
     }
 
-    int read_start(const ReadCallback &cb)
+    int read_start(const DataCallback &cb)
     {
         m_readCallback = cb;
-        return uv_read_start(get<uv_stream_t>(), on_alloc_cb, on_read_cb);
+        return uv_read_start(handle<uv_stream_t>(), on_alloc_cb, on_read_cb);
     }
 
     int read_stop()
     {
         m_readCallback = nullptr;
-        return uv_read_stop(get<uv_stream_t>());
+        return uv_read_stop(handle<uv_stream_t>());
     }
 
     int write(const QByteArray &ba, const RequestCallback &cb)
     {
         WriteRequest *wr = new WriteRequest(ba, cb);
-        return uv_write(wr->get(), get<uv_stream_t>(), wr->buf(), 1, on_write_cb);
+        return uv_write(wr->get(), handle<uv_stream_t>(), wr->buf(), 1, on_write_cb);
     }
 
     int shutdown()
     {
         uv_shutdown_t* req = new uv_shutdown_t;
-        return uv_shutdown(req, get<uv_stream_t>(), on_shutdown_cb);
+        return uv_shutdown(req, handle<uv_stream_t>(), on_shutdown_cb);
     }
 
     int listen(const RequestCallback &cb)
     {
         m_connectionCallback = cb;
-        return uv_listen(get<uv_stream_t>(), 128, on_connection_cb);
+        return uv_listen(handle<uv_stream_t>(), 128, on_connection_cb);
     }
 
     void setCloseCallback(const Callback &cb)
@@ -236,7 +235,7 @@ public:
 
 private:
     RequestCallback m_connectionCallback;
-    ReadCallback m_readCallback;
+    DataCallback m_readCallback;
     Callback m_closeCallback;
     static void on_write_cb(uv_write_t* req, int status)
     {
@@ -302,7 +301,7 @@ public:
         Stream<uv_tcp_t>()
     {
         //qDebug()<<"Tcp";
-        uv_tcp_init(loop->handle(), get());
+        uv_tcp_init(loop->handle(), handle());
     }
 
     ~Tcp()
@@ -312,12 +311,12 @@ public:
 
     int nodelay(int enable)
     {
-        return uv_tcp_nodelay(get(), enable);
+        return uv_tcp_nodelay(handle(), enable);
     }
 
     int keepalive(int enable, unsigned int delay)
     {
-        return uv_tcp_keepalive(get(), enable, delay);
+        return uv_tcp_keepalive(handle(), enable, delay);
     }
 
     int connect(const char *ip, int port, const RequestCallback &cb)
@@ -330,7 +329,7 @@ public:
             m_connect_req->data = this;
         }
         m_connectCallback = cb;
-        return uv_tcp_connect(m_connect_req.get(), get(),
+        return uv_tcp_connect(m_connect_req.get(), handle(),
                               reinterpret_cast<const struct sockaddr *>(&addr),
                               on_connect_cb);
     }
@@ -339,7 +338,7 @@ public:
     {
         struct sockaddr_in addr;
         uv_ip4_addr(ip, port, &addr);
-        return uv_tcp_bind(get(), reinterpret_cast<const struct sockaddr *>
+        return uv_tcp_bind(handle(), reinterpret_cast<const struct sockaddr *>
                            (&addr), 0);
     }
 

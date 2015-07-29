@@ -21,4 +21,5 @@ include(..\..\libuv\libuv.pri)
 INCLUDEPATH += ..\..\libuv-cpp-wrapper
 
 HEADERS += \
-    libuvpp.h
+    libuvpp.h \
+    tcpserver.h
