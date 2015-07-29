@@ -100,11 +100,27 @@ public:
         return m_id;
     }
 
-    Tcp* getTcp()
+    void shutdown()
     {
-        return &m_tcp;
+        m_tcp.shutdown();
     }
 
+    void forceClose()
+    {
+        handleClose();
+    }
+
+    void write(const QByteArray &d)
+    {
+        m_tcp.write(d, nullptr);
+    }
+
+
+    MessageCallback messageCallback;
+
+    std::shared_ptr<void> context;
+
+private:
     void connectionEstablished()
     {
         m_tcp.read_start(std::bind(&Connection::handleRead, this, std::placeholders::_1));
@@ -112,15 +128,11 @@ public:
 
     void connectionDestroyed()
     {
-
+        qDebug()<<"connectionDestroyed";
     }
 
-
-
     Callback closeCallback;
-    MessageCallback messageCallback;
-
-    std::shared_ptr<void> context;
+    friend class TcpServer;
 private:
     Tcp m_tcp;
     int m_id;
@@ -192,7 +204,7 @@ private:
     void onNewConnection(int status)
     {
         ConnectionPtr connection(new Connection(m_loop));
-        m_tcpServer.accept(connection->getTcp());
+        m_tcpServer.accept(&connection->m_tcp);
         connection->connectionEstablished();
 
         m_connections.insert(std::make_pair(connection->id(), connection));
@@ -207,11 +219,7 @@ private:
 
     void onConnectionClose(const ConnectionPtr &connection)
     {
-        m_loop->queueInLoop([connection]()
-        {
-            qDebug()<<"Loop destroy connection";
-            connection->connectionDestroyed();
-        });
+        m_loop->queueInLoop(std::bind(&Connection::connectionDestroyed, connection));
         m_connections.erase(connection->id());
         qDebug()<<"onConnectionClose";
         if (connectionCloseCallback)
@@ -233,10 +241,17 @@ int main(int argc, char *argv[])
     {
         std::shared_ptr<Session> session = std::static_pointer_cast<Session>(connection->context);
         session->round++;
+
         QByteArray respon = QString("%1 round=%2").arg(session->uuid).arg(session->round).toUtf8();
         QString head = QString("HTTP/1.1 200 OK\r\nContent-Length: %1\r\n\r\n").arg(respon.size());
-        connection->getTcp()->write(head.toUtf8(), nullptr);
-        connection->getTcp()->write(respon, nullptr);
+        connection->write(head.toUtf8());
+        connection->write(respon);
+        if (session->round==2)
+        {
+            qDebug()<<"Call shutdown";
+            connection->forceClose();
+            return;
+        }
     });
     server.connectionCallback = [](const ConnectionPtr &connection)
     {
