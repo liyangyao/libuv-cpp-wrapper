@@ -15,11 +15,14 @@ CONFIG   -= app_bundle
 TEMPLATE = app
 
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    httpserver.cpp
 
 include(..\..\libuv\libuv.pri)
 INCLUDEPATH += ..\..\libuv-cpp-wrapper
 
 HEADERS += \
     libuvpp.h \
-    tcpserver.h
+    tcpserver.h \
+    httpserver.h \
+    HttpParser.h
