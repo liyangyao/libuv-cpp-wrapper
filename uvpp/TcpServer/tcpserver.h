@@ -21,36 +21,34 @@ public:
     explicit LoopEx():
         Loop()
     {
-        uv_mutex_init(&m_functor_mutex);
-        m_functor_async.uv_handle()->data = this;
-
-        uv_async_init(handle(), m_functor_async.handle(), functor_async_cb);
+        m_async.reset(new Async(this, std::bind(&LoopEx::onFunctor, this)));
     }
 
     void queueInLoop(const Callback &functor)
     {
-        uv_mutex_lock(&m_functor_mutex);
+        MutexLocker lock(&m_mutex);
         m_functors.push(functor);
-        uv_mutex_unlock(&m_functor_mutex);
-        uv_async_send(m_functor_async.handle());
+        m_async->send();
     }
 
 private:
     std::queue<Callback> m_functors;
-    Handle<uv_async_t> m_functor_async;
-    uv_mutex_t m_functor_mutex;
+    std::unique_ptr<Async> m_async;
+    Mutex m_mutex;
     void onFunctor()
     {
         while (true)
         {
             Callback fun = nullptr;
-            uv_mutex_lock(&m_functor_mutex);
-            if (!m_functors.empty())
             {
-                fun.swap(m_functors.front());
-                m_functors.pop();
+                MutexLocker lock(&m_mutex);
+                if (!m_functors.empty())
+                {
+                    fun.swap(m_functors.front());
+                    m_functors.pop();
+                }
             }
-            uv_mutex_unlock(&m_functor_mutex);
+
             if (fun)
             {
                 fun();
@@ -59,13 +57,6 @@ private:
                 break;
             }
         }
-    }
-
-    static void functor_async_cb(uv_async_t* handle)
-    {
-        //qDebug()<<"functor_async_cb";
-        LoopEx *_this = reinterpret_cast<LoopEx *>(handle->data);
-        _this->onFunctor();
     }
     DISABLE_COPY(LoopEx)
 };

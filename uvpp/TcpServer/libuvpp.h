@@ -31,7 +31,7 @@ class Loop
 public:
     explicit Loop()
     {
-         uv_loop_init(&m_uv_loop);
+        uv_loop_init(&m_uv_loop);
     }
 
     void run()
@@ -355,6 +355,171 @@ private:
         }
     }
     DISABLE_COPY(Tcp)
+};
+
+class Timer: public Handle<uv_timer_t>
+{
+public:
+    Timer(Loop* loop):
+        Handle<uv_timer_t>()
+    {
+        uv_timer_init(loop->handle(), handle());
+    }
+
+    void start(const Callback& functor, uint64_t timeout, uint64_t repeat)
+    {
+        m_functor = functor;
+        uv_timer_start(handle(), timer_cb, timeout, repeat);
+    }
+
+    void stop()
+    {
+        m_functor = nullptr;
+        uv_timer_stop(handle());
+    }
+
+    void again()
+    {
+        uv_timer_again(handle());
+    }
+
+    void setRepeat(uint64_t repeat)
+    {
+        uv_timer_set_repeat(handle(), repeat);
+    }
+
+    uint64_t getRepeat()
+    {
+        return uv_timer_get_repeat(handle());
+    }
+
+private:
+    Callback m_functor;
+    static void timer_cb(uv_timer_t* handle)
+    {
+        Timer* _this = (Timer *)handle->data;
+        if (_this->m_functor)
+        {
+            _this->m_functor();
+        }
+    }
+};
+
+class Thread: public Handle<uv_thread_t>
+{
+public:
+    explicit Thread():
+        Handle<uv_thread_t>()
+    {
+
+    }
+
+    int create(const Callback& functor)
+    {
+        m_functor = functor;
+        return uv_thread_create(handle(), entry, this);
+    }
+
+    int join()
+    {
+        return uv_thread_join(handle());
+    }
+
+private:
+    Callback m_functor;
+    static void entry(void* arg)
+    {
+        Thread* _this = (Thread *)arg;
+        if (_this->m_functor)
+        {
+            _this->m_functor();
+        }
+    }
+    DISABLE_COPY(Thread);
+};
+
+class Mutex
+{
+public:
+    explicit Mutex()
+    {
+        uv_mutex_init(&m_mutex);
+    }
+    ~Mutex()
+    {
+        uv_mutex_destroy(&m_mutex);
+    }
+
+    void lock()
+    {
+        uv_mutex_lock(&m_mutex);
+    }
+
+    void unlock()
+    {
+        uv_mutex_unlock(&m_mutex);
+    }
+
+    int tryLock()
+    {
+        return uv_mutex_trylock(&m_mutex);
+    }
+
+    uv_mutex_t* handle()
+    {
+        return &m_mutex;
+    }
+
+private:
+    uv_mutex_t m_mutex;
+    DISABLE_COPY(Mutex);
+};
+
+class MutexLocker
+{
+public:
+    explicit MutexLocker(Mutex* mutex):
+        m_mutex(mutex)
+    {
+        m_mutex->lock();
+    }
+
+    ~MutexLocker()
+    {
+        m_mutex->unlock();
+    }
+
+private:
+    Mutex* m_mutex;
+    DISABLE_COPY(MutexLocker);
+};
+
+class Async: public Handle<uv_async_t>
+{
+public:
+    explicit Async(Loop* loop,const Callback& functor):
+        Handle<uv_async_t>(),
+        m_functor(functor)
+    {
+        uv_async_init(loop->handle(), handle(), async_cb);
+    }
+
+    void send()
+    {
+        uv_async_send(handle());
+    }
+
+private:
+    Callback m_functor;
+    static void async_cb(uv_async_t* handle)
+    {
+        Async* _this = (Async *)handle->data;
+        if (_this->m_functor)
+        {
+            _this->m_functor();
+        }
+    }
+    DISABLE_COPY(Async);
 };
 
 #endif // LIBUVPP_H
