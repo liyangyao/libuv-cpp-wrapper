@@ -13,7 +13,7 @@ Date: 2015/7/18
 #include <QTextCodec>
 #include <QUuid>
 #include "tcpserver.h"
-
+#include "httpserver.h"
 
 
 class Session
@@ -35,14 +35,8 @@ public:
     QString uuid;
 };
 
-
-
-
-int main(int argc, char *argv[])
+void testTcpServer()
 {
-    QCoreApplication a(argc, argv);
-    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
-
     LoopEx loop;
     TcpServer server(&loop);
     server.listen("0.0.0.0", 80);
@@ -76,6 +70,29 @@ int main(int argc, char *argv[])
 
     qDebug()<<"begin run";
     loop.run();
+}
+
+void testHttpServer()
+{
+    HttpServer s;
+    s.httpRequestCallback = [](Reqeust* request, Respon* respon)
+    {
+        QString s = QString("method:%1 url:%2").arg(request->method).arg(QString(request->urlData));
+        respon->writeBody(s.toUtf8());
+    };
+
+    s.start(80);
+}
+
+
+
+int main(int argc, char *argv[])
+{
+    QCoreApplication a(argc, argv);
+    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
+    QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
+
+    testHttpServer();
 
     qDebug()<<"OVER";
     return a.exec();

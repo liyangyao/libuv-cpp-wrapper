@@ -11,6 +11,7 @@ Date: 2015/7/29
 #include <QObject>
 #include <QDebug>
 #include <unordered_map>
+#include <queue>
 #include "libuvpp.h"
 
 
@@ -62,7 +63,7 @@ private:
 
     static void functor_async_cb(uv_async_t* handle)
     {
-        qDebug()<<"functor_async_cb";
+        //qDebug()<<"functor_async_cb";
         LoopEx *_this = reinterpret_cast<LoopEx *>(handle->data);
         _this->onFunctor();
     }
@@ -135,13 +136,14 @@ private:
     int m_id;
     void handleClose()
     {
-        qDebug()<<"handleClose";
+        //qDebug()<<"handleClose";
         Ptr guardThis(shared_from_this());
         closeCallback(guardThis);
     }
 
     void handleRead(const QByteArray &data)
     {
+        //qDebug()<<"handleRead:"<<data;
         if (messageCallback)
         {
             messageCallback(shared_from_this(), data);
@@ -166,7 +168,7 @@ public:
     bool listen(const char *ip, int port)
     {
         m_tcpServer.bind(ip, port);
-        return m_tcpServer.listen(std::bind(&TcpServer::onNewConnection, this, std::placeholders::_1));
+        return m_tcpServer.listen(std::bind(&TcpServer::onNewConnection, this, std::placeholders::_1))>=0;
     }
 
     ConnectionCallback connectionCallback;
@@ -186,7 +188,7 @@ private:
         m_connections.insert(std::make_pair(connection->id(), connection));
         connection->closeCallback = std::bind(&TcpServer::onConnectionClose, this, std::placeholders::_1);
         connection->messageCallback = messageCallback;
-        qDebug()<<"onNewConnection";
+        //qDebug()<<"onNewConnection";
         if (connectionCallback)
         {
             connectionCallback(connection);
@@ -197,7 +199,7 @@ private:
     {
         m_loop->queueInLoop(std::bind(&Connection::connectionDestroyed, connection));
         m_connections.erase(connection->id());
-        qDebug()<<"onConnectionClose";
+        //qDebug()<<"onConnectionClose";
         if (connectionCloseCallback)
         {
             connectionCloseCallback(connection);

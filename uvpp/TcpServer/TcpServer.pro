@@ -16,7 +16,8 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp \
-    httpserver.cpp
+    httpserver.cpp \
+    http_parser.c
 
 include(..\..\libuv\libuv.pri)
 INCLUDEPATH += ..\..\libuv-cpp-wrapper
@@ -25,4 +26,5 @@ HEADERS += \
     libuvpp.h \
     tcpserver.h \
     httpserver.h \
-    HttpParser.h
+    HttpParser.h \
+    http_parser.h
