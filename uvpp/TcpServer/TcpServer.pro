@@ -25,4 +25,5 @@ HEADERS += \
     libuvpp.h \
     tcpserver.h \
     httpserver.h \
-    HttpParser.h
+    HttpParser.h \
+    Singleton.h

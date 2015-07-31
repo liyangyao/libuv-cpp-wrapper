@@ -13,7 +13,7 @@ Date: 2015/7/18
 #include <QTextCodec>
 #include <QUuid>
 #include "tcpserver.h"
-
+#include "Singleton.h"
 
 
 class Session
@@ -35,15 +35,52 @@ public:
     QString uuid;
 };
 
+class Foo
+{
+public:
+    Foo()
+    {
+        qDebug()<<"Foo("<<this<<")Constructor";
+    }
+};
 
+class Ufo
+{
+public:
+    Ufo()
+    {
+        qDebug()<<"Ufo("<<this<<")Constructor";
+    }
+};
+
+
+void once()
+{
+    qDebug()<<"Run Once";
+}
 
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
+    uv_once_t guard=UV_ONCE_INIT;
+    uv_once(&guard, once);
+    uv_once(&guard, once);
+    qDebug()<<"After Once";
+
+//    Foo::instance();
+//    Foo::instance();
+//
+    Foo& ins = Singleton<Foo>::instance();
+    Foo& ins2 = Singleton<Foo>::instance();
+    Ufo& ufo = Singleton<Ufo>::instance();
+
 
     LoopEx loop;
+
+
+
     TcpServer server(&loop);
     server.listen("0.0.0.0", 80);
     server.messageCallback = ([](const Connection::Ptr &connection, const QByteArray &d)
