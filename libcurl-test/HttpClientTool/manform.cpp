@@ -96,6 +96,7 @@ void ManForm::on_btnPerform_clicked()
     ui->memRespon->clear();
     m_request.reset();
     initRequest();
+    QByteArray body;
     if (ui->cbMethod->currentIndex()==0)
     {
         m_request.setopt_httpget();
@@ -103,9 +104,12 @@ void ManForm::on_btnPerform_clicked()
     else if (ui->cbMethod->currentIndex()==1)
     {
         m_request.setopt_httppost();
-        m_request.setopt_post_fields(ui->memData->toPlainText().toUtf8().constData());
+        body = ui->memData->toPlainText().toUtf8();
+        m_request.setopt_post_fields(body.constData());
+        m_request.setopt_post_field_size(body.size());
     }
-    m_request.setopt_url(ui->edtUrl->text().toUtf8().constData());
+    QByteArray url = ui->edtUrl->text().toUtf8();
+    m_request.setopt_url(url.constData());
     if (!m_request.perform())
     {
         ui->memRespon->insertPlainText("Error:\r\n" + QString(m_request.lastError()));
@@ -114,7 +118,7 @@ void ManForm::on_btnPerform_clicked()
 }
 
 void ManForm::initRequest()
-{    m_request.setopt_timeout(ui->edtTimeout->text().toInt());
-     m_request.setopt_writefunction(std::bind(&ManForm::onRespon, this, std::placeholders::_1, std::placeholders::_2));
-
+{
+    m_request.setopt_timeout(ui->edtTimeout->text().toInt());
+    m_request.setopt_writefunction(std::bind(&ManForm::onRespon, this, std::placeholders::_1, std::placeholders::_2));
 }

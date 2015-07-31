@@ -14,6 +14,7 @@ Date: 2015/7/18
 #include <QUuid>
 #include "tcpserver.h"
 #include "Singleton.h"
+#include "httpserver.h"
 
 
 class Session
@@ -54,29 +55,8 @@ public:
 };
 
 
-void once()
+void testTcpServer()
 {
-    qDebug()<<"Run Once";
-}
-
-
-int main(int argc, char *argv[])
-{
-    QCoreApplication a(argc, argv);
-    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
-    uv_once_t guard=UV_ONCE_INIT;
-    uv_once(&guard, once);
-    uv_once(&guard, once);
-    qDebug()<<"After Once";
-
-//    Foo::instance();
-//    Foo::instance();
-//
-    Foo& ins = Singleton<Foo>::instance();
-    Foo& ins2 = Singleton<Foo>::instance();
-    Ufo& ufo = Singleton<Ufo>::instance();
-
-
     LoopEx loop;
 
 
@@ -113,6 +93,33 @@ int main(int argc, char *argv[])
 
     qDebug()<<"begin run";
     loop.run();
+}
+
+void testHttpServer()
+{
+    HttpServer s;
+    s.httpRequestCallback = [](Reqeust* request, Respon* respon)
+    {
+        QString s = QString("method:%1 url:%2").arg(request->method).arg(QString(request->urlData));
+        respon->writeBody(s.toUtf8());
+    };
+
+    s.start(80);
+}
+
+
+
+int main(int argc, char *argv[])
+{
+    QCoreApplication a(argc, argv);
+    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
+    QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
+    
+    Foo& ins = Singleton<Foo>::instance();
+    Foo& ins2 = Singleton<Foo>::instance();
+    Ufo& ufo = Singleton<Ufo>::instance();
+
+    testHttpServer();
 
     qDebug()<<"OVER";
     return a.exec();
