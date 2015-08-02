@@ -59,8 +59,6 @@ void testTcpServer()
 {
     LoopEx loop;
 
-
-
     TcpServer server(&loop);
     server.listen("0.0.0.0", 80);
     server.messageCallback = ([](const Connection::Ptr &connection, const QByteArray &d)
@@ -107,19 +105,45 @@ void testHttpServer()
     s.start(80);
 }
 
+void testTcpServer2()
+{
+    LoopEx loop;
+
+    TcpServer server(&loop);
+    int port = 333;
+    bool ok = server.listen("0.0.0.0", port);
+    qDebug()<<"listen at"<<port<<ok;
+    server.messageCallback = ([](const Connection::Ptr &connection, const QByteArray &d)
+    {
+        qDebug()<<"Connection("<<connection.get()<<") length="<<d.length()<<"hex:"<<d.toHex();
+
+        connection->write(QByteArray::fromHex("ff"));
+        connection->write(d);
+
+    });
+    server.connectionCallback = [](const Connection::Ptr &connection)
+    {
+        qDebug()<<"Connection("<<connection.get()<<") create";
+    };
+
+    server.connectionCloseCallback = [](const Connection::Ptr &connection)
+    {
+        qDebug()<<"Connection("<<connection.get()<<") close";
+    };
+
+    loop.run();
+}
+
 
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
-    QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
-    
-    Foo& ins = Singleton<Foo>::instance();
-    Foo& ins2 = Singleton<Foo>::instance();
-    Ufo& ufo = Singleton<Ufo>::instance();
+    QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));   
 
-    testHttpServer();
+    //testHttpServer();
+    testTcpServer2();
 
     qDebug()<<"OVER";
     return a.exec();
