@@ -1,5 +1,0 @@
-编程模型
-non-blocking IO + one loop per thread + thread pool
-
-回调接口
-std::function + std::bind
