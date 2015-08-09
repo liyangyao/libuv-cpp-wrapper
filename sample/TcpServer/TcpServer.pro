@@ -20,7 +20,7 @@ SOURCES += main.cpp \
     http_parser.c
 
 include(..\..\libuv\libuv.pri)
-INCLUDEPATH += ..\..\libuv-cpp-wrapper
+INCLUDEPATH += ..\..\uvplusplus
 
 HEADERS += \
     libuvpp.h \
