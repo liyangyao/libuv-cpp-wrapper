@@ -28,4 +28,6 @@ HEADERS += \
     httpserver.h \
     HttpParser.h \
     Singleton.h\
-    http_parser.h
+    http_parser.h \
+    http/Request.h \
+    http/Respon.h
