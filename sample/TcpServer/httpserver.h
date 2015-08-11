@@ -13,6 +13,7 @@ Date: 2015/7/30
 #include <QUrl>
 #include "tcpserver.h"
 
+class Context;
 class Reqeust
 {
 public:
@@ -20,6 +21,7 @@ public:
     QString method;
     QByteArray body;
     QByteArray urlData;
+    Context* context;
 };
 
 class Respon

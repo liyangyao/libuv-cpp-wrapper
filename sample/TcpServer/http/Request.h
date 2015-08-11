@@ -1,18 +1,24 @@
 /****************************************************************************
 
 Creator: liyangyao@gmail.com
-Date: 2015/7/3
+Date: 2015/8/10
 
 ****************************************************************************/
 
-#include <QCoreApplication>
-#include "httpserver.h"
+#ifndef REQUEST_H
+#define REQUEST_H
 
-int main(int argc, char *argv[])
+namespace test
 {
-    QCoreApplication a(argc, argv);
+class Request
+{
+public:
+    //url
+    //method
+    //header
+    //body
 
-    HttpServer s;
-    s.start(80);
-    return a.exec();
+};
 }
+
+#endif // REQUEST_H

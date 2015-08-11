@@ -38,6 +38,7 @@ Context::Context(Connection* connection):
     m_parser.onMessageBegin = [this]()->int
     {
         m_request.reset(new Reqeust);
+        m_request->context = this;
         return 0;
     };
     m_parser.onUrl = [this](const char *at, size_t length)->int
