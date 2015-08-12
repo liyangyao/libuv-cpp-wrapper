@@ -44,12 +44,12 @@ void Encryptor::reset()
 
 QByteArray Encryptor::encrypt(const QByteArray &in)
 {
-    QByteArray out, iv;
+    QByteArray out;
     const quint8* inp = reinterpret_cast<const quint8 *>(in.constData());
 
 
     if (!enCipher) {
-        iv = Cipher::randomIv(16);//ep->ivLen);
+        QByteArray iv = Cipher::randomIv(16);//ep->ivLen);
         enCipher = new Cipher(ENCRY_METHOD/*ep->method*/, "Njg1MjgxZD"/*ep->key*/, iv, true);
         out = iv + enCipher->update(in);
     } else {

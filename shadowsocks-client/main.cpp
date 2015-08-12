@@ -6,12 +6,69 @@
 #include "tcpserver.h"
 #include <botan/botan.h>
 #include <array>
+#include <QDateTime>
+#include <DbgHelp.h>
+#include <time.h>
 #include "encryptor.h"
 
 #pragma execution_character_set("utf-8")
 
+#pragma comment(lib, "Dbghelp.lib")
 
+void DisableSetUnhandledExceptionFilter()
+{
+    void *addr = (void*)GetProcAddress(LoadLibrary(L"kernel32.dll"), "SetUnhandledExceptionFilter");
+    if (addr)
+    {
+        unsigned char code[16];
+        int size = 0;
+        code[size++] = 0x33;
+        code[size++] = 0xC0;
+        code[size++] = 0xC2;
+        code[size++] = 0x04;
+        code[size++] = 0x00;
 
+        DWORD dwOldFlag, dwTempFlag;
+        VirtualProtect(addr, size, PAGE_READWRITE, &dwOldFlag);
+        WriteProcessMemory(GetCurrentProcess(), addr, code, size, NULL);
+        VirtualProtect(addr, size, dwOldFlag, &dwTempFlag);
+    }
+}
+
+LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS* ExceptionInfo)
+{
+    wchar_t szProgramPath[MAX_PATH] = {0};
+    if(GetModuleFileName(NULL, szProgramPath, MAX_PATH))
+    {
+           LPTSTR lpSlash = wcsrchr(szProgramPath, '\\');
+           if(lpSlash)
+           {
+               *(lpSlash + 1) = '\0';
+           }
+    }
+    wchar_t szDumpFile[MAX_PATH] = {0};
+    swprintf_s(szDumpFile, MAX_PATH, L"%s%d.dmp", szProgramPath, time(NULL));
+
+    HANDLE lhDumpFile = CreateFile(szDumpFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
+    MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;
+    loExceptionInfo.ExceptionPointers = ExceptionInfo;
+    loExceptionInfo.ThreadId = GetCurrentThreadId();
+    loExceptionInfo.ClientPointers = true;
+
+    MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), lhDumpFile, MiniDumpWithIndirectlyReferencedMemory, &loExceptionInfo, NULL, NULL);
+    CloseHandle(lhDumpFile);
+
+    return EXCEPTION_EXECUTE_HANDLER;
+
+}
+
+void InstallDump()
+{
+    SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+    DisableSetUnhandledExceptionFilter();
+}
+
+int gSessionCount = 0;
 class Session
 {
 public:
@@ -20,22 +77,24 @@ public:
         m_tcp(conn->loop()),
         m_remoteConnected(false)
     {
-        qDebug()<<"Session Constructor("<<this<<")";
+        gSessionCount++;
+        qDebug()<<"Session Constructor("<<this<<")"<<gSessionCount;
         localMessage(data);
         conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
         m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, std::placeholders::_1));
-        m_tcp.setCloseCallback(std::bind(&Session::onRemoteClosed, this));
+        m_tcp.onClose(std::bind(&Session::onRemoteClosed, this));
     }
 
     ~Session()
     {
-        qDebug()<<"Session Destructor("<<this<<")";
+        gSessionCount--;
+        qDebug()<<"Session Destructor("<<this<<")"<<gSessionCount;
     }
 
 private:
     uv::Tcp m_tcp;
     QByteArray m_dataToWrite;
-    uv::ConnectionWeakPtr m_local;
+    uv::ConnectionPtr m_local;
     Encryptor m_encryptor;
     bool m_remoteConnected;
 
@@ -77,24 +136,14 @@ private:
         QByteArray output = m_encryptor.decrypt(data);
         //qDebug()<<"remoteMessage size="<<data.size()<<" outputsize="<<output.size();
         //qDebug()<<output;
-        uv::ConnectionPtr conn = m_local.lock();
-        if (conn)
-        {
-            conn->write(output);
-        }
-        else{
-            qDebug()<<"Find.................!!!!!!!!!!!!!!!!!";
-        }
+        m_local->write(output);
+
     }
 
     void onRemoteClosed()
     {
         qDebug()<<"Session onRemoteClosed("<<this<<")";
-        uv::ConnectionPtr conn = m_local.lock();
-        if (conn)
-        {
-            conn->forceClose();
-        }
+        m_local->shutdown();
     }
 };
 
@@ -180,27 +229,41 @@ void runThread()
 
 }
 
-
-
-int main(int argc, char *argv[])
+int newMain(int argc, char *argv[])
 {
+    InstallDump();
     QApplication a(argc, argv);
-    try
-    {
-        Botan::LibraryInitializer init;
-    }
-    catch(std::exception &e)
-    {
-        qDebug()<<e.what();
-    }
+
+//    try
+//    {
+//        Botan::LibraryInitializer init;
+//    }
+//    catch(std::exception &e)
+//    {
+//        qDebug()<<e.what();
+//    }
 
     MainForm w;
     w.show();
     runThread();
-    qDebug()<< QByteArray::fromHex("7777772e676f6f676c652e636f6d");
+
+
 
 
 
 
     return a.exec();
+}
+
+int main(int argc, char *argv[])
+{
+    __try
+    {
+        newMain(argc, argv);
+    }
+    __except( MyUnhandledExceptionFilter(GetExceptionInformation()), EXCEPTION_EXECUTE_HANDLER )
+    {
+
+    }
+
 }

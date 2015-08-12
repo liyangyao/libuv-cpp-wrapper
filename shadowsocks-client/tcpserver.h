@@ -81,7 +81,7 @@ public:
         m_id = id;
         qDebug()<<"Connection"<<m_id;
 
-        m_tcp.setCloseCallback(std::bind(&Connection::handleClose, this));
+        m_tcp.onClose(std::bind(&Connection::handleClose, this));
 
     }
 
@@ -125,7 +125,7 @@ private:
     }
 
     void connectionDestroyed()
-    {
+    {                
         qDebug()<<"connectionDestroyed";
     }
 
@@ -139,7 +139,9 @@ private:
     void handleClose()
     {
         //qDebug()<<"handleClose";
-        ConnectionPtr guardThis(shared_from_this());
+        messageCallback = nullptr;
+        context = nullptr;
+        ConnectionPtr guardThis(shared_from_this());        
         closeCallback(guardThis);
     }
 
@@ -170,7 +172,7 @@ public:
     bool listen(const char *ip, int port)
     {
         m_tcpServer.bind(ip, port);
-        return m_tcpServer.listen(std::bind(&TcpServer::onNewConnection, this, std::placeholders::_1))>=0;
+        return m_tcpServer.listen(std::bind(&TcpServer::onNewConnection, this))>=0;
     }
 
     ConnectionCallback connectionCallback;
@@ -181,7 +183,7 @@ private:
     Tcp m_tcpServer;
     std::unordered_map<int, ConnectionPtr> m_connections;
 
-    void onNewConnection(int status)
+    void onNewConnection()
     {
         ConnectionPtr connection(new Connection(m_loop));
         m_tcpServer.accept(&connection->m_tcp);

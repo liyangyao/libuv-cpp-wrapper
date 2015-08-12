@@ -87,7 +87,18 @@ public:
 
     virtual ~Handle()
     {
-        close();
+        if (m_uv_handle)
+        {
+            qDebug()<<"~Handle";
+            if (m_onClose)
+            {
+                qDebug()<<"HAS onClose";
+                m_onClose();
+                m_onClose = nullptr;
+            }
+            uv_handle()->data = nullptr;//after this, no call m_onClose
+            close();
+        }
     }
 
     uv_handle_t* uv_handle()
@@ -108,20 +119,21 @@ public:
 
     int is_active()
     {
-        return uv_is_active(handle());
+        return uv_is_active(uv_handle());
     }
 
-    int is_close()
+    int is_closeing()
     {
-        return uv_is_closing(handle());
+        return uv_is_closing(uv_handle());
     }
 
     void close()
     {
-        if (m_uv_handle)
+        qDebug()<<"is_active()="<<is_active()<<"is_closeing"<<is_closeing();
+        if (m_uv_handle && !is_closeing())
         {
+            qDebug()<<"INNER CLOSE";
             uv_close(uv_handle(), close_cb);
-            m_uv_handle = nullptr;
         }
     }
 
@@ -140,12 +152,28 @@ public:
         uv_has_ref(uv_handle());
     }
 
+    void onClose(const Callback &callback)
+    {
+        m_onClose = callback;
+    }
+
 private:
     HANDLE_T *m_uv_handle;
+    Callback m_onClose;
     static void close_cb(uv_handle_t* handle)
     {
-        HANDLE_T* data = reinterpret_cast<HANDLE_T *>(handle);
-        delete data;
+        HANDLE_T* _handle = reinterpret_cast<HANDLE_T *>(handle);
+        if (handle->data)
+        {
+            Handle* _this = (Handle*)handle->data;
+            if (_this->m_onClose)
+            {
+                qDebug()<<"Call onClose";
+                _this->m_onClose();
+            }
+            _this->m_uv_handle = nullptr;
+        }
+        delete _handle;
     }
     DISABLE_COPY(Handle)
 };
@@ -213,31 +241,39 @@ public:
 
     int write(const QByteArray &ba, const RequestCallback &cb)
     {
-        WriteRequest *wr = new WriteRequest(ba, cb);
-        return uv_write(wr->get(), handle<uv_stream_t>(), wr->buf(), 1, on_write_cb);
+        uv_stream_t* stream = handle<uv_stream_t>();
+        if (stream)
+        {
+            WriteRequest *wr = new WriteRequest(ba, cb);
+            return uv_write(wr->get(), stream, wr->buf(), 1, on_write_cb);
+        }
+        else{
+            qDebug()<<"---FOND NULL WRITE---";
+        }
+        return 1;
     }
 
     int shutdown()
     {
-        uv_shutdown_t* req = new uv_shutdown_t;
-        return uv_shutdown(req, handle<uv_stream_t>(), on_shutdown_cb);
+        uv_stream_t* stream = handle<uv_stream_t>();
+        if (stream)
+        {
+            uv_shutdown_t* req = new uv_shutdown_t;
+            return uv_shutdown(req, handle<uv_stream_t>(), on_shutdown_cb);
+        }
+        return 1;
     }
 
-    int listen(const RequestCallback &cb)
+    int listen(const Callback &newConnectionCallback)
     {
-        m_connectionCallback = cb;
+        m_newConnectionCallback = newConnectionCallback;
         return uv_listen(handle<uv_stream_t>(), 128, on_connection_cb);
     }
 
-    void setCloseCallback(const Callback &cb)
-    {
-        m_closeCallback = cb;
-    }
-
 private:
-    RequestCallback m_connectionCallback;
+    Callback m_newConnectionCallback;
     DataCallback m_readCallback;
-    Callback m_closeCallback;
+
     static void on_write_cb(uv_write_t* req, int status)
     {
         WriteRequest *wr = reinterpret_cast<WriteRequest *>(req->data);
@@ -269,11 +305,10 @@ private:
         }
         else if (nread<0)
         {
-            _this->close();
-            if (_this->m_closeCallback)
-            {
-                _this->m_closeCallback();
-            }
+            _this->read_stop();
+            qDebug()<<"CALL CLOSE";
+            _this->close();            
+
         }
     }
 
@@ -286,9 +321,9 @@ private:
     static void on_connection_cb(uv_stream_t* server, int status)
     {
         Stream *_this = reinterpret_cast<Stream *>(server->data);
-        if (_this->m_connectionCallback)
+        if (_this->m_newConnectionCallback)
         {
-            _this->m_connectionCallback(status);
+            _this->m_newConnectionCallback();
         }
     }
     DISABLE_COPY(Stream)
