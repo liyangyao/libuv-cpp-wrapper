@@ -29,6 +29,7 @@
 #include <QDebug>
 #include "cipher.h"
 
+
 QByteArray evpBytesToKey(const QByteArray &password)
 {
         QByteArray key;

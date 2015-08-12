@@ -21,7 +21,8 @@ HEADERS  += mainform.h\
     libuvpp.h\
     tcpserver.h\
     cipher.h\
-    encryptor.h
+    encryptor.h \
+    botan_wrapper.h
 
 
 FORMS    += mainform.ui
