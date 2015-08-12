@@ -11,30 +11,35 @@ Date: 2015/7/29
 #include <QObject>
 #include <QDebug>
 #include <unordered_map>
-#include <queue>
+#include <deque>
 #include "libuvpp.h"
 
 namespace uv
 {
 
-class TcpServerLoop:public Loop
+class Connection;
+typedef std::shared_ptr<Connection> ConnectionPtr;
+typedef std::weak_ptr<Connection> ConnectionWeakPtr;
+typedef std::function<void(const ConnectionPtr &)> ConnectionCallback;
+typedef std::function<void(const ConnectionPtr &, const QByteArray &)> ConnectionMessageCallback;
+
+class AsyncFunctor
 {
 public:
-    explicit TcpServerLoop():
-        Loop()
+    explicit AsyncFunctor(Loop* loop)
     {
-        m_async.reset(new Async(this, std::bind(&TcpServerLoop::onFunctor, this)));
+        m_async.reset(new Async(loop, std::bind(&AsyncFunctor::onFunctor, this)));
     }
 
-    void queueInLoop(const Callback &functor)
+    void queue(const Callback &functor)
     {
         MutexLocker lock(&m_mutex);
-        m_functors.push(functor);
+        m_functors.push_back(functor);
         m_async->send();
     }
 
 private:
-    std::queue<Callback> m_functors;
+    std::deque<Callback> m_functors;
     std::unique_ptr<Async> m_async;
     Mutex m_mutex;
     void onFunctor()
@@ -47,7 +52,7 @@ private:
                 if (!m_functors.empty())
                 {
                     fun.swap(m_functors.front());
-                    m_functors.pop();
+                    m_functors.pop_front();
                 }
             }
 
@@ -60,34 +65,26 @@ private:
             }
         }
     }
-    DISABLE_COPY(TcpServerLoop)
+    DISABLE_COPY(AsyncFunctor)
 };
 
-class Connection;
-typedef std::shared_ptr<Connection> ConnectionPtr;
-typedef std::weak_ptr<Connection> ConnectionWeakPtr;
+
 class Connection:public std::enable_shared_from_this<Connection>
 {
 public:
-    typedef std::function<void(const ConnectionPtr &)> Callback;
-    typedef std::function<void(const ConnectionPtr &, const QByteArray &)> MessageCallback;
-
     explicit Connection(Loop *loop):
         m_loop(loop),
         m_tcp(loop)
     {
+        qDebug()<<"Connection Constructor("<<this<<")";
         static int id = 0;
         id++;
-        m_id = id;
-        qDebug()<<"Connection"<<m_id;
-
-        m_tcp.onClose(std::bind(&Connection::handleClose, this));
-
+        m_id = id;                    
     }
 
     ~Connection()
     {
-        qDebug()<<"~Connection"<<m_id;
+        qDebug()<<"Connection Destructor("<<this<<")";
     }
 
     int id()
@@ -115,21 +112,24 @@ public:
         return m_loop;
     }
 
-    MessageCallback messageCallback;
+    ConnectionMessageCallback messageCallback;
     std::shared_ptr<void> context;
 
 private:
     void connectionEstablished()
     {
-        m_tcp.read_start(std::bind(&Connection::handleRead, this, std::placeholders::_1));
+        m_tcp.onClose(std::bind(&Connection::handleClose, this));
+        m_tcp.onMessage(std::bind(&Connection::handleRead, this, std::placeholders::_1));
+        m_tcp.read_start();
     }
 
     void connectionDestroyed()
     {                
-        qDebug()<<"connectionDestroyed";
+        qDebug()<<"Connection connectionDestroyed("<<this<<")";
+        context = nullptr;
     }
 
-    Callback closeCallback;
+    ConnectionCallback closeCallback;
     friend class TcpServer;
 
 private:
@@ -138,16 +138,14 @@ private:
     int m_id;
     void handleClose()
     {
-        //qDebug()<<"handleClose";
-        messageCallback = nullptr;
-        context = nullptr;
+        qDebug()<<"Connection handleClose("<<this<<")";
         ConnectionPtr guardThis(shared_from_this());        
         closeCallback(guardThis);
     }
 
     void handleRead(const QByteArray &data)
     {
-        //qDebug()<<"handleRead:"<<data;
+        //qDebug()<<"Connection handleRead("<<this<<")";
         if (messageCallback)
         {
             messageCallback(shared_from_this(), data);
@@ -156,31 +154,29 @@ private:
     DISABLE_COPY(Connection)
 };
 
-typedef std::function<void(const ConnectionPtr &)> ConnectionCallback;
-
-
-
 class TcpServer
 {
 public:
-    explicit TcpServer(TcpServerLoop* loop):
+    explicit TcpServer(Loop* loop):
         m_loop(loop),
-        m_tcpServer(loop)
+        m_tcpServer(loop),
+        m_asyncFunctor(loop)
     {
-
+        m_tcpServer.onConnection(std::bind(&TcpServer::onNewConnection, this));
     }
     bool listen(const char *ip, int port)
     {
         m_tcpServer.bind(ip, port);
-        return m_tcpServer.listen(std::bind(&TcpServer::onNewConnection, this))>=0;
+        return m_tcpServer.listen();
     }
 
     ConnectionCallback connectionCallback;
     ConnectionCallback connectionCloseCallback;
-    Connection::MessageCallback messageCallback;
+    ConnectionMessageCallback messageCallback;
 private:
-    TcpServerLoop* m_loop;
+    Loop* m_loop;
     Tcp m_tcpServer;
+    AsyncFunctor m_asyncFunctor;
     std::unordered_map<int, ConnectionPtr> m_connections;
 
     void onNewConnection()
@@ -201,9 +197,8 @@ private:
 
     void onConnectionClose(const ConnectionPtr &connection)
     {
-        m_loop->queueInLoop(std::bind(&Connection::connectionDestroyed, connection));
+        m_asyncFunctor.queue(std::bind(&Connection::connectionDestroyed, connection));
         m_connections.erase(connection->id());
-        //qDebug()<<"onConnectionClose";
         if (connectionCloseCallback)
         {
             connectionCloseCallback(connection);

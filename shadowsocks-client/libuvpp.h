@@ -24,6 +24,8 @@ using std::unique_ptr;
 using std::function;
 
 typedef function<void()> Callback;
+typedef function<void(bool connected)> ConnectCallback;
+typedef function<void(const QByteArray &data)> MessageCallback;
 typedef function<void(int status)> RequestCallback;
 typedef function<void(const QByteArray &data)> DataCallback;
 
@@ -82,23 +84,11 @@ public:
     explicit Handle()
     {
         m_uv_handle = new HANDLE_T;
-        uv_handle()->data = this;
     }
 
     virtual ~Handle()
     {
-        if (m_uv_handle)
-        {
-            qDebug()<<"~Handle";
-            if (m_onClose)
-            {
-                qDebug()<<"HAS onClose";
-                m_onClose();
-                m_onClose = nullptr;
-            }
-            uv_handle()->data = nullptr;//after this, no call m_onClose
-            close();
-        }
+        close();
     }
 
     uv_handle_t* uv_handle()
@@ -117,24 +107,14 @@ public:
         return reinterpret_cast<T *>(m_uv_handle);
     }
 
-    int is_active()
+    bool is_active()
     {
         return uv_is_active(uv_handle());
     }
 
-    int is_closeing()
+    bool is_closeing()
     {
         return uv_is_closing(uv_handle());
-    }
-
-    void close()
-    {
-        qDebug()<<"is_active()="<<is_active()<<"is_closeing"<<is_closeing();
-        if (m_uv_handle && !is_closeing())
-        {
-            qDebug()<<"INNER CLOSE";
-            uv_close(uv_handle(), close_cb);
-        }
     }
 
     void ref()
@@ -147,32 +127,22 @@ public:
         uv_unref(uv_handle());
     }
 
-    int has_ref()
+    bool has_ref()
     {
         uv_has_ref(uv_handle());
     }
 
-    void onClose(const Callback &callback)
-    {
-        m_onClose = callback;
-    }
-
 private:
     HANDLE_T *m_uv_handle;
-    Callback m_onClose;
+
+    void close()
+    {
+        uv_close(uv_handle(), close_cb);
+    }
+
     static void close_cb(uv_handle_t* handle)
     {
         HANDLE_T* _handle = reinterpret_cast<HANDLE_T *>(handle);
-        if (handle->data)
-        {
-            Handle* _this = (Handle*)handle->data;
-            if (_this->m_onClose)
-            {
-                qDebug()<<"Call onClose";
-                _this->m_onClose();
-            }
-            _this->m_uv_handle = nullptr;
-        }
         delete _handle;
     }
     DISABLE_COPY(Handle)
@@ -220,59 +190,60 @@ public:
     explicit Stream():
         Handle<HANDLE_T>()
     {
+        handle()->data = this;
     }
 
-    int accept(Stream *client)
+    bool accept(Stream *client)
     {
-        return uv_accept(handle<uv_stream_t>(), client->handle<uv_stream_t>());
+        return uv_accept(handle<uv_stream_t>(), client->handle<uv_stream_t>())>=0;
     }
 
-    int read_start(const DataCallback &cb)
+    int read_start()
     {
-        m_readCallback = cb;
         return uv_read_start(handle<uv_stream_t>(), on_alloc_cb, on_read_cb);
     }
 
     int read_stop()
     {
-        m_readCallback = nullptr;
         return uv_read_stop(handle<uv_stream_t>());
     }
 
     int write(const QByteArray &ba, const RequestCallback &cb)
     {
-        uv_stream_t* stream = handle<uv_stream_t>();
-        if (stream)
-        {
-            WriteRequest *wr = new WriteRequest(ba, cb);
-            return uv_write(wr->get(), stream, wr->buf(), 1, on_write_cb);
-        }
-        else{
-            qDebug()<<"---FOND NULL WRITE---";
-        }
-        return 1;
+        WriteRequest *wr = new WriteRequest(ba, cb);
+        return uv_write(wr->get(), handle<uv_stream_t>(), wr->buf(), 1, on_write_cb);
     }
 
     int shutdown()
     {
-        uv_stream_t* stream = handle<uv_stream_t>();
-        if (stream)
-        {
-            uv_shutdown_t* req = new uv_shutdown_t;
-            return uv_shutdown(req, handle<uv_stream_t>(), on_shutdown_cb);
-        }
-        return 1;
+        uv_shutdown_t* req = new uv_shutdown_t;
+        return uv_shutdown(req, handle<uv_stream_t>(), on_shutdown_cb);
     }
 
-    int listen(const Callback &newConnectionCallback)
+    bool listen()
     {
-        m_newConnectionCallback = newConnectionCallback;
-        return uv_listen(handle<uv_stream_t>(), 128, on_connection_cb);
+        return uv_listen(handle<uv_stream_t>(), 128, on_connection_cb)>=0;
     }
 
-private:
-    Callback m_newConnectionCallback;
-    DataCallback m_readCallback;
+    void onConnection(const Callback &cb)
+    {
+        m_onConnection = cb;
+    }
+
+    void onClose(const Callback &cb)
+    {
+        m_onClose = cb;
+    }
+
+    void onMessage(const MessageCallback &cb)
+    {
+        m_onMessage = cb;
+    }
+
+private:    
+    Callback m_onConnection;
+    Callback m_onClose;
+    MessageCallback m_onMessage;
 
     static void on_write_cb(uv_write_t* req, int status)
     {
@@ -298,32 +269,32 @@ private:
         if (nread>0)
         {
             QByteArray ba(buf->base, nread);
-            if (_this->m_readCallback)
+            if (_this->m_onMessage)
             {
-                _this->m_readCallback(ba);
+                _this->m_onMessage(ba);
             }
         }
         else if (nread<0)
         {
             _this->read_stop();
-            qDebug()<<"CALL CLOSE";
-            _this->close();            
-
+            if (_this->m_onClose)
+            {
+                _this->m_onClose();
+            }
         }
     }
 
-    static void on_shutdown_cb(uv_shutdown_t* req, int status)
+    static void on_shutdown_cb(uv_shutdown_t* req, int /*status*/)
     {
         delete req;
-        qDebug()<<"shutdown status="<<status;
     }
 
-    static void on_connection_cb(uv_stream_t* server, int status)
+    static void on_connection_cb(uv_stream_t* server, int /*status*/)
     {
-        Stream *_this = reinterpret_cast<Stream *>(server->data);
-        if (_this->m_newConnectionCallback)
+        Stream *_this = reinterpret_cast<Stream *>(server->data);        
+        if (_this->m_onConnection)
         {
-            _this->m_newConnectionCallback();
+            _this->m_onConnection();
         }
     }
     DISABLE_COPY(Stream)
@@ -355,7 +326,7 @@ public:
         return uv_tcp_keepalive(handle(), enable, delay);
     }
 
-    int connect(const char *ip, int port, const RequestCallback &cb)
+    int connect(const char *ip, int port)
     {
         struct sockaddr_in addr;
         uv_ip4_addr(ip, port, &addr);
@@ -364,7 +335,6 @@ public:
             m_connect_req.reset(new uv_connect_t);
             m_connect_req->data = this;
         }
-        m_connectCallback = cb;
         return uv_tcp_connect(m_connect_req.get(), handle(),
                               reinterpret_cast<const struct sockaddr *>(&addr),
                               on_connect_cb);
@@ -378,16 +348,26 @@ public:
                            (&addr), 0);
     }
 
+    void onConnect(const ConnectCallback &cb)
+    {
+        m_onConnect = cb;
+    }
+
 private:
     unique_ptr<uv_connect_t> m_connect_req;
-    RequestCallback m_connectCallback;
+    ConnectCallback m_onConnect;
 
     static void on_connect_cb(uv_connect_t* req, int status)
     {
+        bool connected = status==0;
         Tcp *_this = reinterpret_cast<Tcp *>(req->data);
-        if (_this->m_connectCallback)
+        if (_this->m_onConnect)
         {
-            _this->m_connectCallback(status);
+            _this->m_onConnect(connected);
+        }
+        if (connected)
+        {
+            _this->read_start();
         }
     }
     DISABLE_COPY(Tcp)
@@ -538,6 +518,7 @@ public:
         m_functor(functor)
     {
         uv_async_init(loop->handle(), handle(), async_cb);
+        handle()->data = this;
     }
 
     void send()

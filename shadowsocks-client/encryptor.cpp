@@ -28,7 +28,8 @@ const char * ENCRY_METHOD = "AES-128/CFB";
 Encryptor::Encryptor() :
     enCipher(nullptr),
     deCipher(nullptr)
-{}
+{
+}
 
 void Encryptor::reset()
 {
@@ -45,7 +46,7 @@ void Encryptor::reset()
 QByteArray Encryptor::encrypt(const QByteArray &in)
 {
     QByteArray out;
-    const quint8* inp = reinterpret_cast<const quint8 *>(in.constData());
+   // const quint8* inp = reinterpret_cast<const quint8 *>(in.constData());
 
 
     if (!enCipher) {
@@ -62,8 +63,6 @@ QByteArray Encryptor::encrypt(const QByteArray &in)
 QByteArray Encryptor::decrypt(const QByteArray &in)
 {
     QByteArray out;
-    const quint8* inp = reinterpret_cast<const quint8 *>(in.constData());
-
 
     if (!deCipher) {
         deCipher = new Cipher(ENCRY_METHOD/*ep->method*/, "Njg1MjgxZD"/*ep->key*/, in.mid(0, 16/*ep->ivLen*/), false);
@@ -72,39 +71,30 @@ QByteArray Encryptor::decrypt(const QByteArray &in)
         out = deCipher->update(in);
     }
 
-
     return out;
 }
 
 QByteArray Encryptor::encryptAll(const QByteArray &in)
 {
-    QByteArray out, iv;
-    const quint8* inp = reinterpret_cast<const quint8 *>(in.constData());
-
-
-        if (enCipher) {
-            delete enCipher;
-        }
-        iv = Cipher::randomIv(16/*ep->ivLen*/);
-        enCipher = new Cipher(ENCRY_METHOD/*ep->method*/,"Njg1MjgxZD"/*ep->key*/, iv, true);
-        out = iv + enCipher->update(in);
-
+    if (enCipher)
+    {
+        delete enCipher;
+    }
+    QByteArray iv = Cipher::randomIv(16/*ep->ivLen*/);
+    enCipher = new Cipher(ENCRY_METHOD/*ep->method*/,"Njg1MjgxZD"/*ep->key*/, iv, true);
+    QByteArray out = iv + enCipher->update(in);
 
     return out;
 }
 
 QByteArray Encryptor::decryptAll(const QByteArray &in)
 {
-    QByteArray out;
-    const quint8* inp = reinterpret_cast<const quint8 *>(in.constData());
-
-
-        if (deCipher) {
-            delete deCipher;
-        }
-        deCipher = new Cipher(ENCRY_METHOD/*ep->method*/, "Njg1MjgxZD"/*ep->key*/, in.mid(0, 16/*ep->ivLen*/), false);
-        out = deCipher->update(in.mid(16/*ep->ivLen*/));
-
+    if (deCipher)
+    {
+        delete deCipher;
+    }
+    deCipher = new Cipher(ENCRY_METHOD/*ep->method*/, "Njg1MjgxZD"/*ep->key*/, in.mid(0, 16/*ep->ivLen*/), false);
+    QByteArray out = deCipher->update(in.mid(16/*ep->ivLen*/));
 
     return out;
 }

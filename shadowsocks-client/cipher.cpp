@@ -63,7 +63,6 @@ Cipher::Cipher(const QByteArray &method, const QByteArray &password, const QByte
         //QString m = method;
         //std::string str = m.toLower().toStdString();
         QByteArray key = evpBytesToKey(password);
-        qDebug()<<"key is"<<key;
         std::string str(method.constData(), method.length());
         Botan::SymmetricKey _key(reinterpret_cast<const Botan::byte *>(key.constData()), key.size());
         Botan::InitializationVector _iv(reinterpret_cast<const Botan::byte *>(iv.constData()), iv.size());

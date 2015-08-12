@@ -81,7 +81,8 @@ public:
         qDebug()<<"Session Constructor("<<this<<")"<<gSessionCount;
         localMessage(data);
         conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
-        m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, std::placeholders::_1));
+        m_tcp.connect("45.62.109.185", 443);
+        m_tcp.onConnect(std::bind(&Session::remoteConnected, this, std::placeholders::_1));
         m_tcp.onClose(std::bind(&Session::onRemoteClosed, this));
     }
 
@@ -109,25 +110,22 @@ private:
             m_tcp.write(output, nullptr);
         }
         else{
-            qDebug()<<"WRITE TO LOCAL";
             m_dataToWrite.append(output);
         }
     }
 
-    void remoteConnected(int status)
+    void remoteConnected(bool connected)
     {
-        if (status==0)
+        if (connected)
         {
-            qDebug()<<"connected";
+            qDebug()<<"Session remote connected("<<this<<")";
             m_remoteConnected = true;
             if (!m_dataToWrite.isEmpty())
             {
                 m_tcp.write(m_dataToWrite, nullptr);
                 m_dataToWrite.clear();
-                //qDebug()<<"WRITE DATATOWRITE";
             }
-            m_tcp.read_start(std::bind(&Session::remoteMessage, this, std::placeholders::_1));
-            //qDebug()<<"END remoteConnected";
+            m_tcp.onMessage(std::bind(&Session::remoteMessage, this, std::placeholders::_1));
         }
     }
 
@@ -153,13 +151,11 @@ public:
     AuthSession(const uv::ConnectionPtr &conn):
         m_status(0)
     {
-        qDebug()<<"AuthSession Constructor("<<this<<")";
         conn->messageCallback = std::bind(&AuthSession::localMessage, this, std::placeholders::_1, std::placeholders::_2);
     }
 
     ~AuthSession()
     {
-        qDebug()<<"AuthSession Destructor("<<this<<")";
     }
 
 private:
@@ -170,7 +166,7 @@ private:
         if (m_status==0)
         {
             QString hex = data.toHex();
-            qDebug()<<"recv:"<< hex;
+            //qDebug()<<"recv:"<< hex;
             m_status = 1;
             //REQUEST:
             //client连接proxy的第一个报文信息，进行认证机制协商
@@ -193,19 +189,13 @@ private:
             conn->write(response);
 
             m_status = 2;
-            qDebug()<<m_recved.mid(4, m_recved.length()-6).toHex();
+            //qDebug()<<m_recved.mid(4, m_recved.length()-6).toHex();
             QByteArray url = m_recved.mid(5, m_recved.length()-7);
-            //int port = data.right(2).toInt();
-            qDebug()<<url;
 
-
-
-            qDebug()<<"go to session";
+            qDebug()<<"go to session:"<<url;
             std::shared_ptr<Session> session(new Session(conn, data.right(m_recved.length()-3)));
             conn->context = session;
         }
-
-
     }
 };
 
@@ -215,7 +205,7 @@ void runThread()
     uv::Thread* thread = new uv::Thread;
     thread->create([]()
     {
-        uv::TcpServerLoop loop;
+        uv::Loop loop;
         uv::TcpServer server(&loop);
         server.connectionCallback = [](const uv::ConnectionPtr &conn)
         {
