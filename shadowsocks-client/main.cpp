@@ -46,6 +46,38 @@ void InstallDump()
     SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
 }
 
+class Buffer
+{
+public:
+    explicit Buffer(QByteArray *data):
+        m_data(data),
+        m_pos(0)
+    {
+
+    }
+
+    int remain()
+    {
+        return m_data->size() - m_pos;
+    }
+
+    QByteArray read(int n)
+    {
+        int pos = m_pos + n;
+        if (pos>m_data->size())
+        {
+            pos = m_data->size();
+        }
+        QByteArray tmp = QByteArray::fromRawData(m_data->constData()+m_pos, pos-m_pos);
+        m_pos = pos;
+        return tmp;
+    }
+
+private:
+    QByteArray *m_data;
+    int m_pos;
+};
+
 int gSessionCount = 0;
 class Session
 {
@@ -127,8 +159,10 @@ class AuthSession
 {
 public:
     AuthSession(const uv::ConnectionPtr &conn):
-        m_status(0)
+        m_status(0),
+        m_urlLen(0)
     {
+        m_buffer.reset(new Buffer(&m_recved));
         conn->messageCallback = std::bind(&AuthSession::localMessage, this, std::placeholders::_1, std::placeholders::_2);
     }
 
@@ -139,6 +173,9 @@ public:
 private:
     int m_status;
     QByteArray m_recved;
+    std::unique_ptr<Buffer> m_buffer;
+    int m_addrType;
+    int m_urlLen;
     void localMessage(const uv::ConnectionPtr &conn, const QByteArray &data)
     {
         if (m_status==0)
@@ -152,26 +189,38 @@ private:
             //RESPON:
             //proxy从METHODS字段中选中一个字节(一种认证机制)，并向Client发送响应报文:
             //一般是 hex: 05 00 即：版本5，无需认证
-            QByteArray respon=QByteArray::fromHex("0500");
+            static QByteArray respon = QByteArray::fromHex("0500");
             conn->write(respon);
         }
         else if (m_status==1)
         {
+            //05 01 00 03 0e 7777772e676f6f676c652e636f6d 01bb
             m_recved.append(data);
-            if (m_recved.length()<=7)
+            if (m_urlLen==0)
+            {
+                if (m_buffer->remain()<5)
+                {
+                    return;
+                }
+                QByteArray d = m_buffer->read(5);
+                m_addrType = d[3];
+                m_urlLen = d[4];
+                qDebug()<<"m_addrType="<<m_addrType<<"m_urlLen="<<m_urlLen;
+            }
+            if (m_buffer->remain()<m_urlLen+2)
             {
                 return;
             }
+            QString aurl = m_buffer->read(m_urlLen);
+            qDebug()<<"go to session:"<<aurl;
+
+            m_status = 2;
+
             static const char res [] = { 5, 0, 0, 1, 0, 0, 0, 0, 16, 16 };
             static const QByteArray response(res, 10);
             conn->write(response);
 
-            m_status = 2;
-            //qDebug()<<m_recved.mid(4, m_recved.length()-6).toHex();
-            QByteArray url = m_recved.mid(5, m_recved.length()-7);
-
-            qDebug()<<"go to session:"<<url;
-            std::shared_ptr<Session> session(new Session(conn, data.right(m_recved.length()-3)));
+            std::shared_ptr<Session> session(new Session(conn, m_recved.right(m_recved.length()-3)));
             conn->context = session;
         }
     }
@@ -205,6 +254,7 @@ int main(int argc, char *argv[])
     MainForm w;
     w.show();
     runThread();
+
 
     return a.exec();
 }
