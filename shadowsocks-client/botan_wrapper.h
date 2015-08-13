@@ -9,51 +9,72 @@ Date: 2015/8/13
 #define BOTAN_WRAPPER_H
 #include <QObject>
 #include <botan/botan.h>
-
-typedef Botan::SecureVector<Botan::byte> SecureByteArray;
-#define DataOfSecureByteArray(sba) sba.begin()
+#include <QCryptographicHash>
 
 namespace Botan {
 
 class Encryptor
 {
 public:
-    Encryptor(const QString &algo, const QString &password)
+    Encryptor()
     {
+        setup("AES-128/CFB", "Njg1MjgxZD", 16, 16);
+    }
+
+    bool setup(const QString &algo, const QString &password, int keyLen, int ivLen)
+    {
+        m_algo = algo;
+        m_ivLen = ivLen;
+        m_keyLen = keyLen;
+
         QByteArray key = evpBytesToKey(password.toUtf8());
-        std::string algo_spec = algo.toStdString();
-        Botan::SymmetricKey _key(reinterpret_cast<const Botan::byte *>(key.constData()), key.size());
-        m_encrypt = createPipe(algo_spec, _key, Botan::ENCRYPTION);
-        m_decrypt = createPipe(algo_spec, _key, Botan::DECRYPTION);
+        m_key = Botan::SymmetricKey(reinterpret_cast<const Botan::byte *>(key.constData()), key.size());
+        m_encrypt.reset();
+        m_decrypt.reset();
+        return true;
     }
 
     QByteArray encrypt(const QByteArray& in)
     {
+        if (!m_encrypt)
+        {
+            std::string algo = m_algo.toStdString();
+            AutoSeeded_RNG rng;
+            InitializationVector iv(rng, m_ivLen);
+            m_encrypt.reset(new Botan::Pipe(Botan::get_cipher(algo, m_key, iv, Botan::ENCRYPTION)));
+
+            return QByteArray::fromRawData((const char *)iv.begin(), iv.length())  + handle(m_encrypt, in);
+        }
         return handle(m_encrypt, in);
     }
 
     QByteArray decrypt(const QByteArray& in)
     {
+        if (!m_decrypt)
+        {
+            std::string algo = m_algo.toStdString();
+            InitializationVector iv((byte *)in.constData(), m_ivLen);
+
+            m_decrypt.reset(new Botan::Pipe(Botan::get_cipher(algo, m_key, iv, Botan::DECRYPTION)));
+
+            return handle(m_decrypt, in.mid(m_ivLen));
+        }
         return handle(m_decrypt, in);
     }
 
+
 private:
+    int m_ivLen;
+    int m_keyLen;
+    Botan::SymmetricKey m_key;
+    QString m_algo;
     std::unique_ptr<Pipe> m_encrypt;
     std::unique_ptr<Pipe> m_decrypt;
-    std::unique_ptr<Pipe> createPipe(const std::string &algo_spec, const SymmetricKey &key, Cipher_Dir dir)
-    {
-        QByteArray iv = randomIv(16);//ep->ivLen);
-        Botan::SymmetricKey _key(reinterpret_cast<const Botan::byte *>(key.constData()), key.size());
-        Botan::InitializationVector _iv(reinterpret_cast<const Botan::byte *>(iv.constData()), iv.size());
-        Botan::Keyed_Filter *filter = Botan::get_cipher(algo_spec, key, _iv, dir);
-        //Botan::pipe will take control over filter, we shouldn't deallocate filter externally
-        return std::unique_ptr<Pipe>(new Botan::Pipe(filter));
-    }
 
     QByteArray handle(std::unique_ptr<Pipe>& pipe, const QByteArray& data)
     {
         pipe->process_msg(reinterpret_cast<const Botan::byte *>(data.constData()), data.size());
-        SecureByteArray c = pipe->read_all(Botan::Pipe::LAST_MESSAGE);
+        Botan::SecureVector<byte> c = pipe->read_all(Botan::Pipe::LAST_MESSAGE);
         QByteArray out(reinterpret_cast<const char *>(c.begin()), c.size());
         return out;
     }
@@ -66,13 +87,13 @@ private:
         QByteArray data;
         int i = 0;
 
-        while (m.size() < 16 + 16) {
+        while (m.size() < m_keyLen + m_ivLen) {
             if (i == 0) {
                 data = password;
             } else {
                 data = m[i - 1] + password;
             }
-            m.append(Cipher::md5Hash(data));
+            m.append(QCryptographicHash::hash(data, QCryptographicHash::Md5));
             i++;
         }
         QByteArray ms;
@@ -80,33 +101,12 @@ private:
             ms.append(*it);
         }
 
-        key = ms.mid(0, 16);
+        key = ms.mid(0, m_keyLen);
         return key;
     }
 
-    QByteArray randomIv(int length)
-    {
-        QByteArray out;
-        if (length>0)
-        {
-            AutoSeeded_RNG rng;
-
-            out.resize(length);
-            rng.randomize(reinterpret_cast<Botan::byte *>(out.data()), length);
-
-        }
-        return out;
-    }
 };
 
-void init()
-{
-    SymmetricKey key(reinterpret_cast<const Botan::byte *>(key.constData()), key.size());
-    InitializationVector _iv(reinterpret_cast<const Botan::byte *>(iv.constData()), iv.size());
-    Keyed_Filter *filter = Botan::get_cipher(str, _key, _iv, encode ? Botan::ENCRYPTION : Botan::DECRYPTION);
-//Botan::pipe will take control over filter, we shouldn't deallocate filter externally
-    Botan::pipe = new Botan::Pipe(filter);
-}
 }
 
 #endif // BOTAN_WRAPPER_H

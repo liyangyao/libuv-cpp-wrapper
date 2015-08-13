@@ -9,7 +9,7 @@
 #include <QDateTime>
 #include <DbgHelp.h>
 #include <time.h>
-#include "encryptor.h"
+#include "botan_wrapper.h"
 
 #pragma execution_character_set("utf-8")
 
@@ -96,7 +96,7 @@ private:
     uv::Tcp m_tcp;
     QByteArray m_dataToWrite;
     uv::ConnectionPtr m_local;
-    Encryptor m_encryptor;
+    Botan::Encryptor m_encryptor;
     bool m_remoteConnected;
 
     void localMessage(const QByteArray &data)
@@ -236,10 +236,13 @@ int newMain(int argc, char *argv[])
     MainForm w;
     w.show();
     runThread();
+    Botan::Encryptor e;
 
-
-
-
+//    e.setup("AES-128/CFB", "Njg1MjgxZD", 16, 16);
+//    QByteArray d1 = e.encrypt("Hello World!");
+//    QByteArray d2 = e.decrypt(d1);
+//    qDebug()<<d1.toHex();
+//    qDebug()<<d2;
 
 
     return a.exec();

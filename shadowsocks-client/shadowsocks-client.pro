@@ -13,15 +13,11 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainform.cpp\
-        cipher.cpp\
-    encryptor.cpp
+        mainform.cpp
 
 HEADERS  += mainform.h\
     libuvpp.h\
     tcpserver.h\
-    cipher.h\
-    encryptor.h \
     botan_wrapper.h
 
 
