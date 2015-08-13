@@ -88,7 +88,7 @@ public:
         m_remoteConnected(false)
     {
         gSessionCount++;
-        qDebug()<<"Session Constructor("<<this<<")"<<gSessionCount;
+        qDebug()<<"Session Constructor("<<this<<")";
         localMessage(data);
         conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
         m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, std::placeholders::_1));
@@ -98,7 +98,7 @@ public:
     ~Session()
     {
         gSessionCount--;
-        qDebug()<<"Session Destructor("<<this<<")"<<gSessionCount;
+        qDebug()<<"Session Destructor("<<this<<")--->remain="<<gSessionCount;
     }
 
 private:
@@ -204,14 +204,14 @@ private:
                 QByteArray d = m_buffer->read(5);
                 m_addrType = d[3];
                 m_urlLen = d[4];
-                qDebug()<<"m_addrType="<<m_addrType<<"m_urlLen="<<m_urlLen;
+                //qDebug()<<"m_addrType="<<m_addrType<<"m_urlLen="<<m_urlLen;
             }
             if (m_buffer->remain()<m_urlLen+2)
             {
                 return;
             }
             QString aurl = m_buffer->read(m_urlLen);
-            qDebug()<<"go to session:"<<aurl;
+
 
             m_status = 2;
 
@@ -221,6 +221,7 @@ private:
 
             std::shared_ptr<Session> session(new Session(conn, m_recved.right(m_recved.length()-3)));
             conn->context = session;
+            qDebug()<<"Session("<<session.get()<<")--->"<<aurl;
         }
     }
 };
@@ -233,7 +234,7 @@ void runThread()
     {
         uv::Loop loop;
         uv::TcpServer server(&loop);
-        server.connectionCallback = [](const uv::ConnectionPtr &conn)
+        server.onConnection = [](const uv::ConnectionPtr &conn)
         {
             std::shared_ptr<AuthSession> authSession(new AuthSession(conn));
             conn->context = authSession;

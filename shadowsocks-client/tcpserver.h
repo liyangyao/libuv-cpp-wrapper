@@ -21,6 +21,7 @@ class Connection;
 typedef std::shared_ptr<Connection> ConnectionPtr;
 typedef std::weak_ptr<Connection> ConnectionWeakPtr;
 typedef std::function<void(const ConnectionPtr &)> ConnectionCallback;
+typedef std::function<void(const ConnectionPtr &)> ConnectionCloseCallback;
 typedef std::function<void(const ConnectionPtr &, const QByteArray &)> ConnectionMessageCallback;
 
 class AsyncFunctor
@@ -166,41 +167,41 @@ public:
     bool listen(const char *ip, int port)
     {
         m_tcpServer.bind(ip, port);
-        return m_tcpServer.listen(std::bind(&TcpServer::onNewConnection, this));
+        return m_tcpServer.listen(std::bind(&TcpServer::handleConnection, this));
     }
 
-    ConnectionCallback connectionCallback;
-    ConnectionCallback connectionCloseCallback;
-    ConnectionMessageCallback messageCallback;
+    ConnectionCallback onConnection;
+    ConnectionCloseCallback onConnectionClose;
+    ConnectionMessageCallback onMessage;
 private:
     Loop* m_loop;
     Tcp m_tcpServer;
     AsyncFunctor m_asyncFunctor;
     std::unordered_map<int, ConnectionPtr> m_connections;
 
-    void onNewConnection()
+    void handleConnection()
     {
         ConnectionPtr connection(new Connection(m_loop));
         m_tcpServer.accept(&connection->m_tcp);
         connection->connectionEstablished();
 
         m_connections.insert(std::make_pair(connection->id(), connection));
-        connection->closeCallback = std::bind(&TcpServer::onConnectionClose, this, std::placeholders::_1);
-        connection->messageCallback = messageCallback;
+        connection->closeCallback = std::bind(&TcpServer::hanleConnectionClose, this, std::placeholders::_1);
+        connection->messageCallback = onMessage;
         //qDebug()<<"onNewConnection";
-        if (connectionCallback)
+        if (onConnection)
         {
-            connectionCallback(connection);
+            onConnection(connection);
         }
     }
 
-    void onConnectionClose(const ConnectionPtr &connection)
+    void hanleConnectionClose(const ConnectionPtr &connection)
     {
         m_asyncFunctor.queue(std::bind(&Connection::connectionDestroyed, connection));
         m_connections.erase(connection->id());
-        if (connectionCloseCallback)
+        if (onConnectionClose)
         {
-            connectionCloseCallback(connection);
+            onConnectionClose(connection);
         }
     }
     DISABLE_COPY(TcpServer)
