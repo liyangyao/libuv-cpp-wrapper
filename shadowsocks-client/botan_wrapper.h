@@ -18,30 +18,30 @@ class Encryptor
 public:
     Encryptor()
     {
-        setup("AES-128/CFB", "Njg1MjgxZD", 16, 16);
+        //setup("AES-128/CFB", "Njg1MjgxZD", 128, 16);
+        m_keyLen = 16;
+        m_ivLen = 16;
     }
 
-    bool setup(const QString &algo, const QString &password, int keyLen, int ivLen)
-    {
-        m_algo = algo;
-        m_ivLen = ivLen;
-        m_keyLen = keyLen;
+//    bool setup(const QString &algo, const QString &password, int keyLen, int ivLen)
+//    {
+//        m_algo = algo;
+//        m_ivLen = ivLen;
+//        m_keyLen = keyLen;
 
-        QByteArray key = evpBytesToKey(password.toUtf8());
-        m_key = Botan::SymmetricKey(reinterpret_cast<const Botan::byte *>(key.constData()), key.size());
-        m_encrypt.reset();
-        m_decrypt.reset();
-        return true;
-    }
+//        QByteArray key = evpBytesToKey(password.toUtf8());
+//        m_key = Botan::SymmetricKey(reinterpret_cast<const Botan::byte *>(key.constData()), key.size());
+//        m_encrypt.reset();
+//        m_decrypt.reset();
+//        return true;
+//    }
 
     QByteArray encrypt(const QByteArray& in)
     {
         if (!m_encrypt)
         {
-            std::string algo = m_algo.toStdString();
-            AutoSeeded_RNG rng;
-            InitializationVector iv(rng, m_ivLen);
-            m_encrypt.reset(new Botan::Pipe(Botan::get_cipher(algo, m_key, iv, Botan::ENCRYPTION)));
+            InitializationVector iv(rng(), m_ivLen);
+            m_encrypt.reset(new Botan::Pipe(Botan::get_cipher(algo_spec(), key(), iv, Botan::ENCRYPTION)));
 
             return QByteArray::fromRawData((const char *)iv.begin(), iv.length())  + handle(m_encrypt, in);
         }
@@ -52,10 +52,10 @@ public:
     {
         if (!m_decrypt)
         {
-            std::string algo = m_algo.toStdString();
+
             InitializationVector iv((byte *)in.constData(), m_ivLen);
 
-            m_decrypt.reset(new Botan::Pipe(Botan::get_cipher(algo, m_key, iv, Botan::DECRYPTION)));
+            m_decrypt.reset(new Botan::Pipe(Botan::get_cipher(algo_spec(), key(), iv, Botan::DECRYPTION)));
 
             return handle(m_decrypt, in.mid(m_ivLen));
         }
@@ -66,8 +66,8 @@ public:
 private:
     int m_ivLen;
     int m_keyLen;
-    Botan::SymmetricKey m_key;
-    QString m_algo;
+//    Botan::SymmetricKey m_key;
+//    QString m_algo;
     std::unique_ptr<Pipe> m_encrypt;
     std::unique_ptr<Pipe> m_decrypt;
 
@@ -79,30 +79,41 @@ private:
         return out;
     }
 
-    QByteArray evpBytesToKey(const QByteArray &password)
+    Botan::AutoSeeded_RNG &rng()
     {
-            QByteArray key;
+        static AutoSeeded_RNG aRng;
+        return aRng;
+    }
 
-        QVector<QByteArray> m;
-        QByteArray data;
-        int i = 0;
+    std::string &algo_spec()
+    {
+        static std::string s("AES-128/CFB");
+        return s;
+    }
 
-        while (m.size() < m_keyLen + m_ivLen) {
-            if (i == 0) {
-                data = password;
-            } else {
-                data = m[i - 1] + password;
-            }
-            m.append(QCryptographicHash::hash(data, QCryptographicHash::Md5));
-            i++;
+    Botan::SymmetricKey &key()
+    {
+        static Botan::SymmetricKey aKey;
+        static bool loaded = false;
+        if (!loaded)
+        {
+            QByteArray key = evpBytesToKey("Njg1MjgxZD");
+            aKey = Botan::SymmetricKey(reinterpret_cast<const Botan::byte *>(key.constData()), key.size());
         }
-        QByteArray ms;
-        for (QVector<QByteArray>::ConstIterator it = m.begin(); it != m.end(); ++it) {
-            ms.append(*it);
-        }
+        return aKey;
+    }
 
-        key = ms.mid(0, m_keyLen);
-        return key;
+    QByteArray evpBytesToKey(QByteArray password)
+    {
+        QByteArray md5;
+        QByteArray output;
+        while (output.length() < m_keyLen)
+        {
+            md5 = QCryptographicHash::hash(password, QCryptographicHash::Md5);
+            output.append(md5);
+            password = md5 + password;
+        }
+        return output.left(m_keyLen);
     }
 
 };

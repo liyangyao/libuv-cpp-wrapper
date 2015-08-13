@@ -15,26 +15,6 @@
 
 #pragma comment(lib, "Dbghelp.lib")
 
-void DisableSetUnhandledExceptionFilter()
-{
-    void *addr = (void*)GetProcAddress(LoadLibrary(L"kernel32.dll"), "SetUnhandledExceptionFilter");
-    if (addr)
-    {
-        unsigned char code[16];
-        int size = 0;
-        code[size++] = 0x33;
-        code[size++] = 0xC0;
-        code[size++] = 0xC2;
-        code[size++] = 0x04;
-        code[size++] = 0x00;
-
-        DWORD dwOldFlag, dwTempFlag;
-        VirtualProtect(addr, size, PAGE_READWRITE, &dwOldFlag);
-        WriteProcessMemory(GetCurrentProcess(), addr, code, size, NULL);
-        VirtualProtect(addr, size, dwOldFlag, &dwTempFlag);
-    }
-}
-
 LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS* ExceptionInfo)
 {
     wchar_t szProgramPath[MAX_PATH] = {0};
@@ -59,13 +39,11 @@ LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS* ExceptionInfo
     CloseHandle(lhDumpFile);
 
     return EXCEPTION_EXECUTE_HANDLER;
-
 }
 
 void InstallDump()
 {
     SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
-    DisableSetUnhandledExceptionFilter();
 }
 
 int gSessionCount = 0;
@@ -219,44 +197,14 @@ void runThread()
 
 }
 
-int newMain(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     InstallDump();
     QApplication a(argc, argv);
 
-//    try
-//    {
-//        Botan::LibraryInitializer init;
-//    }
-//    catch(std::exception &e)
-//    {
-//        qDebug()<<e.what();
-//    }
-
     MainForm w;
     w.show();
     runThread();
-    Botan::Encryptor e;
-
-//    e.setup("AES-128/CFB", "Njg1MjgxZD", 16, 16);
-//    QByteArray d1 = e.encrypt("Hello World!");
-//    QByteArray d2 = e.decrypt(d1);
-//    qDebug()<<d1.toHex();
-//    qDebug()<<d2;
-
 
     return a.exec();
-}
-
-int main(int argc, char *argv[])
-{
-    __try
-    {
-        newMain(argc, argv);
-    }
-    __except( MyUnhandledExceptionFilter(GetExceptionInformation()), EXCEPTION_EXECUTE_HANDLER )
-    {
-
-    }
-
 }
