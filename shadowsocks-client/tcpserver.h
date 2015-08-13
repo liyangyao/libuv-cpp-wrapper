@@ -119,8 +119,7 @@ private:
     void connectionEstablished()
     {
         m_tcp.onClose(std::bind(&Connection::handleClose, this));
-        m_tcp.onMessage(std::bind(&Connection::handleRead, this, std::placeholders::_1));
-        m_tcp.read_start();
+        m_tcp.read_start(std::bind(&Connection::handleRead, this, std::placeholders::_1));
     }
 
     void connectionDestroyed()
@@ -162,12 +161,12 @@ public:
         m_tcpServer(loop),
         m_asyncFunctor(loop)
     {
-        m_tcpServer.onConnection(std::bind(&TcpServer::onNewConnection, this));
+
     }
     bool listen(const char *ip, int port)
     {
         m_tcpServer.bind(ip, port);
-        return m_tcpServer.listen();
+        return m_tcpServer.listen(std::bind(&TcpServer::onNewConnection, this));
     }
 
     ConnectionCallback connectionCallback;

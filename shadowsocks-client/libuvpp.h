@@ -198,8 +198,9 @@ public:
         return uv_accept(handle<uv_stream_t>(), client->handle<uv_stream_t>())>=0;
     }
 
-    int read_start()
+    int read_start(MessageCallback onMessage)
     {
+        m_onMessage = onMessage;
         return uv_read_start(handle<uv_stream_t>(), on_alloc_cb, on_read_cb);
     }
 
@@ -220,24 +221,15 @@ public:
         return uv_shutdown(req, handle<uv_stream_t>(), on_shutdown_cb);
     }
 
-    bool listen()
+    bool listen(const Callback &onConnection)
     {
+        m_onConnection = onConnection;
         return uv_listen(handle<uv_stream_t>(), 128, on_connection_cb)>=0;
-    }
-
-    void onConnection(const Callback &cb)
-    {
-        m_onConnection = cb;
     }
 
     void onClose(const Callback &cb)
     {
         m_onClose = cb;
-    }
-
-    void onMessage(const MessageCallback &cb)
-    {
-        m_onMessage = cb;
     }
 
 private:    
@@ -326,8 +318,9 @@ public:
         return uv_tcp_keepalive(handle(), enable, delay);
     }
 
-    int connect(const char *ip, int port)
+    int connect(const char *ip, int port, ConnectCallback onConnect)
     {
+        m_onConnect = onConnect;
         struct sockaddr_in addr;
         uv_ip4_addr(ip, port, &addr);
         if (!m_connect_req)
@@ -348,11 +341,6 @@ public:
                            (&addr), 0);
     }
 
-    void onConnect(const ConnectCallback &cb)
-    {
-        m_onConnect = cb;
-    }
-
 private:
     unique_ptr<uv_connect_t> m_connect_req;
     ConnectCallback m_onConnect;
@@ -365,10 +353,6 @@ private:
         {
             _this->m_onConnect(connected);
         }
-        if (connected)
-        {
-            _this->read_start();
-        }
     }
     DISABLE_COPY(Tcp)
 };
@@ -376,10 +360,11 @@ private:
 class Timer: public Handle<uv_timer_t>
 {
 public:
-    Timer(Loop* loop):
+    explicit Timer(Loop* loop):
         Handle<uv_timer_t>()
     {
         uv_timer_init(loop->handle(), handle());
+        handle()->data = this;
     }
 
     void start(const Callback& functor, uint64_t timeout, uint64_t repeat)
@@ -419,6 +404,7 @@ private:
             _this->m_functor();
         }
     }
+    DISABLE_COPY(Timer)
 };
 
 class Thread: public Handle<uv_thread_t>

@@ -1,16 +1,25 @@
-#include "mainform.h"
+﻿#include "mainform.h"
 #include "ui_mainform.h"
 #include <QDebug>
 #include <Windows.h>
 #include <time.h>
+#include <QTimer>
+
+#pragma execution_character_set("utf-8")
 
 MainForm::MainForm(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::MainForm)
 {
     ui->setupUi(this);
-    m_secret = 100;
-    m_name = "HElloaaa";
+    setWindowFlags(windowFlags()& ~Qt::WindowMaximizeButtonHint);
+    QIcon icon = QIcon(":/icon/lfinger0.ico");
+    setWindowIcon(icon);
+    m_trayIcon = new QSystemTrayIcon(this);
+    m_trayIcon->setIcon(icon);
+    connect(m_trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+            this, SLOT(onTrayIconActivated(QSystemTrayIcon::ActivationReason)));
+    m_trayIcon->show();
 }
 
 MainForm::~MainForm()
@@ -18,47 +27,36 @@ MainForm::~MainForm()
     delete ui;
 }
 
-void MainForm::on_pushButton_clicked()
+void MainForm::onTrayIconActivated(QSystemTrayIcon::ActivationReason)
 {
-    qDebug()<<m_name;
-    m_secret++;
-    int sum = 0;
-    for(int i=0; i<10; i++)
+    setVisible(!isVisible());
+    if (isVisible())
     {
-        sum += i;
-        if (sum<1000 && i==9)
+        bool isIcon=IsIconic(winId());
+        if(!isIcon)
         {
-            _asm int 3
+            SetForegroundWindow(winId());
         }
+        else{
+            OpenIcon(winId());
+        }
+
     }
-    qDebug()<<"sum="<<sum;
 }
 
-void MainForm::on_pushButton_2_clicked()
+void MainForm::on_btnActive_clicked()
 {
-//    wchar_t szProgramPath[MAX_PATH] = {0};
-//    if(GetModuleFileName(NULL, szProgramPath, MAX_PATH))
-//    {
-//           LPTSTR lpSlash = wcsrchr(szProgramPath, '\\');
-//           if(lpSlash)
-//           {
-//               *(lpSlash + 1) = '\0';
-//           }
-//    }
-//    wchar_t szDumpFile[MAX_PATH] = {0};
-//    swprintf(szDumpFile, L"%s%d.dmp", szProgramPath, time(NULL));
-
-    throw std::exception("A My Exception");
-
-    int j = 0;
-    int n =  10 / j;
-    qDebug()<<"n="<<n;
+    QIcon icon = QIcon(":/icon/lfinger1.ico");
+    setWindowIcon(icon);
+    m_trayIcon->setIcon(icon);
+    ui->btnActive->setText("停用代理");
 }
 
-void MainForm::on_pushButton_3_clicked()
+void MainForm::changeEvent(QEvent *e)
 {
-    QList<int> list;
-    list<<1<<2<<3;
-    qDebug()<<list[104];
-    qDebug()<< list.at(303);
+    if((e->type()==QEvent::WindowStateChange)&&isMinimized())
+    {
+        QTimer::singleShot(100, this, SLOT(hide()));
+    }
 }
+

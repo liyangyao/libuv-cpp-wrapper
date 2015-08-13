@@ -1,7 +1,7 @@
 ﻿#include <algorithm>
 #include "mainform.h"
 #include <QApplication>
-
+#include <QTextCodec>
 #include "libuvpp.h"
 #include "tcpserver.h"
 #include <botan/botan.h>
@@ -91,8 +91,7 @@ public:
         qDebug()<<"Session Constructor("<<this<<")"<<gSessionCount;
         localMessage(data);
         conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
-        m_tcp.connect("45.62.109.185", 443);
-        m_tcp.onConnect(std::bind(&Session::remoteConnected, this, std::placeholders::_1));
+        m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, std::placeholders::_1));
         m_tcp.onClose(std::bind(&Session::onRemoteClosed, this));
     }
 
@@ -135,7 +134,7 @@ private:
                 m_tcp.write(m_dataToWrite, nullptr);
                 m_dataToWrite.clear();
             }
-            m_tcp.onMessage(std::bind(&Session::remoteMessage, this, std::placeholders::_1));
+            m_tcp.read_start(std::bind(&Session::remoteMessage, this, std::placeholders::_1));
         }
     }
 
@@ -249,7 +248,12 @@ void runThread()
 int main(int argc, char *argv[])
 {
     InstallDump();
+    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
+    QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
     QApplication a(argc, argv);
+    QFont f = a.font();
+    f.setPointSize(9);
+    a.setFont(f);
 
     MainForm w;
     w.show();

@@ -2,6 +2,7 @@
 #define MAINFORM_H
 
 #include <QWidget>
+#include <QSystemTrayIcon>
 
 namespace Ui {
 class MainForm;
@@ -16,16 +17,14 @@ public:
     ~MainForm();
 
 private slots:
-    void on_pushButton_clicked();
+    void onTrayIconActivated(QSystemTrayIcon::ActivationReason);
 
-    void on_pushButton_2_clicked();
-
-    void on_pushButton_3_clicked();
+    void on_btnActive_clicked();
 
 private:
     Ui::MainForm *ui;
-    int m_secret;
-    char* m_name;
+    QSystemTrayIcon *m_trayIcon;
+    void changeEvent(QEvent *e);
 };
 
 #endif // MAINFORM_H
