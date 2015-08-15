@@ -154,7 +154,7 @@ private:
     }
 };
 
-class AuthSession
+class AuthSession:public std::enable_shared_from_this<AuthSession>
 {
 public:
     AuthSession(const uv::ConnectionPtr &conn):
@@ -210,6 +210,7 @@ private:
             {
                 return;
             }
+            std::shared_ptr<AuthSession> guard(shared_from_this());
             QString aurl = m_buffer->read(m_urlLen);
 
 

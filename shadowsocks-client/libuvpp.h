@@ -440,6 +440,42 @@ private:
     DISABLE_COPY(Thread);
 };
 
+template<typename T>
+class ThreadLocal
+{
+public:
+    explicit ThreadLocal()
+    {
+        uv_key_create(&m_key);
+    }
+
+    ~ThreadLocal()
+    {
+//        T* perThreadValue = static_cast<T*>(uv_key_get(&m_key));
+//        if (perThreadValue)
+//        {
+//            delete perThreadValue;
+//        }
+        uv_key_delete(&m_key);
+    }
+
+    T& value()
+    {
+        T* perThreadValue = static_cast<T*>(uv_key_get(&m_key));
+        if (!perThreadValue)
+        {
+            T* newObj = new T();
+            uv_key_set(&m_key, newObj);
+            perThreadValue = newObj;
+        }
+        return *perThreadValue;
+    }
+
+private:
+    uv_key_t m_key;
+    DISABLE_COPY(ThreadLocal);
+};
+
 class Mutex
 {
 public:

@@ -30,8 +30,15 @@ RC_FILE = app.rc
 
 INCLUDEPATH += $$PWD/include
 LIBS += -L$$PWD/include
-LIBS += -lbotan/lib/botan -ladvapi32 -luser32
+LIBS += -ladvapi32 -luser32
 DEFINES += NOMINMAX
+
+CONFIG(debug, debug|release){
+    LIBS += -lbotan/lib/botan_d
+}
+else{
+    LIBS += -lbotan/lib/botan
+}
 
 QMAKE_CXXFLAGS_RELEASE = $$QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
 QMAKE_LFLAGS_RELEASE = $$QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
