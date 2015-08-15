@@ -88,7 +88,7 @@ public:
         m_remoteConnected(false)
     {
         gSessionCount++;
-        qDebug()<<"Session Constructor("<<this<<")";
+        qDebug()<<"Session Constructor("<<this<<")"<<"("<<m_local.get()<<")";
         localMessage(data);
         conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
         m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, std::placeholders::_1));
@@ -98,7 +98,7 @@ public:
     ~Session()
     {
         gSessionCount--;
-        qDebug()<<"Session Destructor("<<this<<")--->remain="<<gSessionCount;
+        qDebug()<<"Session Destructor("<<this<<")--->remain="<<gSessionCount<<"("<<m_local.get()<<")";
     }
 
 private:
@@ -127,7 +127,7 @@ private:
     {
         if (connected)
         {
-            qDebug()<<"Session remote connected("<<this<<")";
+            qDebug()<<"Session remote connected("<<this<<")"<<"("<<m_local.get()<<")";
             m_remoteConnected = true;
             if (!m_dataToWrite.isEmpty())
             {
@@ -149,7 +149,7 @@ private:
 
     void onRemoteClosed()
     {
-        qDebug()<<"Session onRemoteClosed("<<this<<")";
+        qDebug()<<"Session onRemoteClosed("<<this<<")"<<"("<<m_local.get()<<")";
         m_local->shutdown();
     }
 };
@@ -159,14 +159,17 @@ class AuthSession:public std::enable_shared_from_this<AuthSession>
 public:
     AuthSession(const uv::ConnectionPtr &conn):
         m_status(0),
-        m_urlLen(0)
+        m_urlLen(0),
+        m_local(conn)
     {
+        qDebug()<<"AuthSession Destructor("<<this<<")("<<m_local.get()<<")";
         m_buffer.reset(new Buffer(&m_recved));
         conn->messageCallback = std::bind(&AuthSession::localMessage, this, std::placeholders::_1, std::placeholders::_2);
     }
 
     ~AuthSession()
     {
+        qDebug()<<"AuthSession Destructor("<<this<<")("<<m_local.get()<<")";
     }
 
 private:
@@ -175,6 +178,7 @@ private:
     std::unique_ptr<Buffer> m_buffer;
     int m_addrType;
     int m_urlLen;
+    uv::ConnectionPtr m_local;
     void localMessage(const uv::ConnectionPtr &conn, const QByteArray &data)
     {
         if (m_status==0)
