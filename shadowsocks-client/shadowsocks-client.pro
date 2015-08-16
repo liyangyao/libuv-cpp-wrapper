@@ -18,7 +18,8 @@ SOURCES += main.cpp\
 HEADERS  += mainform.h\
     libuvpp.h\
     tcpserver.h\
-    botan_wrapper.h
+    botan_wrapper.h \
+    Buffer.h
 
 
 FORMS    += mainform.ui
