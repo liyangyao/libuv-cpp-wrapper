@@ -12,6 +12,9 @@ Date: 2015/8/17
 #include "uvpp_loop.h"
 #include "uvpp_handle.h"
 #include "uvpp_stream.h"
+#include "uvpp_tcp.h"
+#include "uvpp_timer.h"
+#include "uvpp_thread.h"
 
 
 #endif // UVPP_H

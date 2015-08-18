@@ -17,12 +17,13 @@ namespace uvpp{
 
 typedef std::function<void()> Callback;
 typedef std::function<void(bool connected)> ConnectCallback;
-typedef std::function<void(const QByteArray &data)> MessageCallback;
-typedef std::function<void(int status)> RequestCallback;
+typedef std::function<void(const QByteArray &data)> ReadCallback;
+typedef std::function<void(int status)> WriteCallback;
+typedef std::function<void(int status)> AfterWorkCallback;
 typedef std::function<void(const QByteArray &data)> DataCallback;
 
 #define DISABLE_COPY(Class) \
-    Class(const Class &); \
+    explicit Class(const Class &); \
     Class &operator=(const Class &);
 }
 

@@ -539,7 +539,7 @@ public:
         Handle<uv_async_t>(),
         m_functor(functor)
     {
-        uv_async_init(loop->handle(), handle(), async_cb);
+        uv_async_init(loop->handle(), handle(), async_cb);        
         handle()->data = this;
     }
 

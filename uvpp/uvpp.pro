@@ -20,7 +20,11 @@ HEADERS  += mainform.h \
     uvpp_define.h \
     uvpp_loop.h \
     uvpp_handle.h \
-    uvpp_stream.h
+    uvpp_stream.h \
+    uvpp_timer.h \
+    uvpp_thread.h \
+    uvpp_async.h \
+    uvpp_tcp.h
 
 FORMS    += mainform.ui
 
