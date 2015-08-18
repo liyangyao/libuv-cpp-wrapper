@@ -16,8 +16,6 @@ SOURCES += main.cpp\
         mainform.cpp
 
 HEADERS  += mainform.h\
-    libuvpp.h\
-    tcpserver.h\
     botan_wrapper.h \
     Buffer.h
 
@@ -30,6 +28,7 @@ include($$PWD/../libuv/libuv.pri)
 RC_FILE = app.rc
 
 INCLUDEPATH += $$PWD/include
+INCLUDEPATH += $$PWD/../uvpp
 LIBS += -L$$PWD/include
 LIBS += -ladvapi32 -luser32
 DEFINES += NOMINMAX

@@ -109,7 +109,7 @@ private:
 class Thread
 {
 public:
-    explicit Thread(const Callback& functor)
+    explicit Thread(const Functor& functor)
     {
         m_functor = functor;
         uv_thread_create(&m_handle, entry, this);
@@ -122,7 +122,7 @@ public:
 
 private:
     uv_thread_t m_handle;
-    Callback m_functor;
+    Functor m_functor;
     static void entry(void* arg)
     {
         Thread* _this = (Thread *)arg;

@@ -24,7 +24,12 @@ HEADERS  += mainform.h \
     uvpp_timer.h \
     uvpp_thread.h \
     uvpp_async.h \
-    uvpp_tcp.h
+    uvpp_tcp.h \
+    uvpp_pipe.h \
+    uvpp_asyncfunctor.h \
+    uvpp_connection.h \
+    uvpp_tcpserver.h \
+    uvpp_idle.h
 
 FORMS    += mainform.ui
 

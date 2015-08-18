@@ -23,10 +23,10 @@ public:
         handle()->data = this;
     }
 
-    bool listen(const Callback &onConnection)
+    bool listen(const NewConnectionCallback &onNewConnection)
     {
-        m_onConnection = onConnection;
-        return uv_listen(handle<uv_stream_t>(), 128, on_connection_cb)==0;
+        m_onNewConnection = onNewConnection;
+        return uv_listen(handle<uv_stream_t>(), 128, stream_connection_cb)==0;
     }
 
     bool accept(Stream *client)
@@ -60,9 +60,9 @@ public:
         req->buffer = data;
         req->callback = cb;
         uv_buf_t buf;
-        buf = uv_buf_init(req->buffer.constData(), req->buffer.size());
+        buf = uv_buf_init(req->buffer.data(), req->buffer.size());
 
-        int err = uv_write(&req->req, handle<uv_stream_t>(), buf.base, 1, stream_write_cb);
+        int err = uv_write(&req->req, handle<uv_stream_t>(), &buf, 1, stream_write_cb);
         if (err<0)
         {
             delete req;
@@ -94,11 +94,11 @@ public:
     bool writable()
     {
         return uv_is_writable(handle<uv_stream_t>());
-    }
+    }   
 
-    void onClose(const Callback &cb)
+    void onStreamClosed(const StreamClosedCallback &cb)
     {
-        m_onClose = cb;
+        m_onStreamClosed = cb;
     }
 
 private:
@@ -144,9 +144,9 @@ private:
         else if (nread<0)
         {
             _this->read_stop();
-            if (_this->m_onClose)
+            if (_this->m_onStreamClosed)
             {
-                _this->m_onClose();
+                _this->m_onStreamClosed();
             }
         }
         Loop* loop = (Loop *)stream->loop->data;
@@ -161,14 +161,14 @@ private:
     static void stream_connection_cb(uv_stream_t* server, int /*status*/)
     {
         Stream *_this = reinterpret_cast<Stream *>(server->data);
-        if (_this->m_onConnection)
+        if (_this->m_onNewConnection)
         {
-            _this->m_onConnection();
+            _this->m_onNewConnection();
         }
     }
 
-    Callback m_onConnection;
-    Callback m_onClose;
+    NewConnectionCallback m_onNewConnection;
+    StreamClosedCallback m_onStreamClosed;
     ReadCallback m_onRead;
 };
 }

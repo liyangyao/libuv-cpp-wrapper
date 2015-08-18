@@ -1,14 +1,15 @@
 ﻿#include <algorithm>
+#include <time.h>
+#include <array>
 #include "mainform.h"
 #include <QApplication>
 #include <QTextCodec>
-#include "libuvpp.h"
-#include "tcpserver.h"
-#include <botan/botan.h>
-#include <array>
+#include <QDebug>
 #include <QDateTime>
+#include <uvpp.h>
+#include <botan/botan.h>
 #include <DbgHelp.h>
-#include <time.h>
+
 #include "botan_wrapper.h"
 
 #pragma execution_character_set("utf-8")
@@ -82,7 +83,7 @@ int gSessionCount = 0;
 class Session
 {
 public:
-    Session(const uv::ConnectionPtr &conn, const QByteArray& data):
+    Session(const uvpp::ConnectionPtr &conn, const QByteArray& data):
         m_local(conn),
         m_tcp(conn->loop()),
         m_remoteConnected(false)
@@ -92,7 +93,7 @@ public:
         localMessage(data);
         conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
         m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, std::placeholders::_1));
-        m_tcp.onClose(std::bind(&Session::onRemoteClosed, this));
+        m_tcp.onStreamClosed(std::bind(&Session::onRemoteClosed, this));
     }
 
     ~Session()
@@ -102,9 +103,9 @@ public:
     }
 
 private:
-    uv::Tcp m_tcp;
+    uvpp::Tcp m_tcp;
     QByteArray m_dataToWrite;
-    uv::ConnectionPtr m_local;
+    uvpp::ConnectionPtr m_local;
     Botan::Encryptor m_encryptor;
     bool m_remoteConnected;
 
@@ -157,7 +158,7 @@ private:
 class AuthSession:public std::enable_shared_from_this<AuthSession>
 {
 public:
-    AuthSession(const uv::ConnectionPtr &conn):
+    AuthSession(const uvpp::ConnectionPtr &conn):
         m_status(0),
         m_urlLen(0),
         m_local(conn)
@@ -178,8 +179,8 @@ private:
     std::unique_ptr<Buffer> m_buffer;
     int m_addrType;
     int m_urlLen;
-    uv::ConnectionPtr m_local;
-    void localMessage(const uv::ConnectionPtr &conn, const QByteArray &data)
+    uvpp::ConnectionPtr m_local;
+    void localMessage(const uvpp::ConnectionPtr &conn, const QByteArray &data)
     {
         if (m_status==0)
         {
@@ -234,12 +235,11 @@ private:
 
 void runThread()
 {
-    uv::Thread* thread = new uv::Thread;
-    thread->create([]()
+    uvpp::Thread* thread = new uvpp::Thread([]()
     {
-        uv::Loop loop;
-        uv::TcpServer server(&loop);
-        server.onConnection = [](const uv::ConnectionPtr &conn)
+        uvpp::Loop loop;
+        uvpp::TcpServer server(&loop);
+        server.onNewConnection = [](const uvpp::ConnectionPtr &conn)
         {
             std::shared_ptr<AuthSession> authSession(new AuthSession(conn));
             conn->context = authSession;

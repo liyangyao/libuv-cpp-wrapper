@@ -54,11 +54,11 @@ public:
     struct loop_work_ctx
     {
         uv_work_t work;
-        Callback work_cb;
+        WorkCallback work_cb;
         AfterWorkCallback after_cb;
     };
 
-    void queue_work(const Callback &work_cb, const AfterWorkCallback &after_cb)
+    void queue_work(const WorkCallback &work_cb, const AfterWorkCallback &after_cb)
     {
         loop_work_ctx* req = new loop_work_ctx;
         req->work_cb = work_cb;

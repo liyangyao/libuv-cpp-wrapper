@@ -43,19 +43,23 @@ public:
     }
 
     //Start connecion to remote endpoint.
-    int connect(const char *ip, int port, const ConnectCallback &onConnect)
+    bool connect(const char *ip, int port, const ConnectCallback &onConnect)
     {
         m_onConnect = onConnect;
         struct sockaddr_in addr;
         uv_ip4_addr(ip, port, &addr);
-        if (!m_connect_req)
-        {
-            m_connect_req.reset(new uv_connect_t);
-            m_connect_req->data = this;
-        }
-        return uv_tcp_connect(m_connect_req.get(), handle(),
+        uv_connect_t *req = new uv_connect_t;
+        req->data = this;
+
+        int err = uv_tcp_connect(req, handle(),
                               reinterpret_cast<const struct sockaddr *>(&addr),
-                              on_connect_cb);
+                              tcp_connect_cb);
+        if (err<0)
+        {
+            delete req;
+            return false;
+        }
+        return true;
     }
 
     QString getsockname()
@@ -85,12 +89,9 @@ public:
     }
 
 
-
-private:
-    unique_ptr<uv_connect_t> m_connect_req;
-    ConnectCallback m_onConnect;
-
-    static void on_connect_cb(uv_connect_t* req, int status)
+private:    
+    DISABLE_COPY(Tcp)
+    static void tcp_connect_cb(uv_connect_t* req, int status)
     {
         bool connected = status==0;
         Tcp *_this = reinterpret_cast<Tcp *>(req->data);
@@ -98,8 +99,9 @@ private:
         {
             _this->m_onConnect(connected);
         }
+        delete req;
     }
-    DISABLE_COPY(Tcp)
+    ConnectCallback m_onConnect;
 };
 }
 
