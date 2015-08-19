@@ -30,7 +30,8 @@ public:
     bool listen(const char *ip, int port)
     {
         m_tcpServer.bind(ip, port);
-        return m_tcpServer.listen(std::bind(&TcpServer::handleNewConnection, this));
+        m_tcpServer.onNewConnection(std::bind(&TcpServer::handleNewConnection, this));
+        return m_tcpServer.listen();
     }
 
     Connection::NewConnectionCallback onNewConnection;

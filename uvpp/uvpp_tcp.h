@@ -14,13 +14,13 @@ public:
     explicit Tcp(Loop *loop):
         Stream<uv_tcp_t>()
     {
-        //qDebug()<<"Tcp";
+        //qDebug()<<"Tcp constructor("<<this<<")";
         uv_tcp_init(loop->handle(), handle());
     }
 
     ~Tcp()
     {
-        //qDebug()<<"~Tcp";
+        //qDebug()<<"~Tcp destructor("<<this<<")";
     }
 
     //Bind to the specified IP and port.
@@ -42,16 +42,21 @@ public:
         return uv_tcp_keepalive(handle(), enable, delay);
     }
 
+    struct tcp_connect_ctx
+    {
+        uv_connect_t req;
+        ConnectCallback callback;
+    };
+
     //Start connecion to remote endpoint.
     bool connect(const char *ip, int port, const ConnectCallback &onConnect)
     {
-        m_onConnect = onConnect;
         struct sockaddr_in addr;
         uv_ip4_addr(ip, port, &addr);
-        uv_connect_t *req = new uv_connect_t;
-        req->data = this;
+        tcp_connect_ctx *req = new tcp_connect_ctx;
+        req->callback = onConnect;
 
-        int err = uv_tcp_connect(req, handle(),
+        int err = uv_tcp_connect((uv_connect_t *)req, handle(),
                               reinterpret_cast<const struct sockaddr *>(&addr),
                               tcp_connect_cb);
         if (err<0)
@@ -93,15 +98,13 @@ private:
     DISABLE_COPY(Tcp)
     static void tcp_connect_cb(uv_connect_t* req, int status)
     {
-        bool connected = status==0;
-        Tcp *_this = reinterpret_cast<Tcp *>(req->data);
-        if (_this->m_onConnect)
+        tcp_connect_ctx *ctx = (tcp_connect_ctx *)req;
+        if (ctx->callback)
         {
-            _this->m_onConnect(connected);
+            ctx->callback(status==0);
         }
-        delete req;
+        delete ctx;
     }
-    ConnectCallback m_onConnect;
 };
 }
 

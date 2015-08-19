@@ -14,6 +14,7 @@ namespace uvpp{
 
 class Connection;
 typedef std::shared_ptr<Connection> ConnectionPtr;
+typedef std::weak_ptr<Connection> ConnectionWeakPtr;
 class Connection:public std::enable_shared_from_this<Connection>
 {
 public:
@@ -33,7 +34,7 @@ public:
     }
 
     ~Connection()
-    {
+    {        
         qDebug()<<"Connection Destructor("<<this<<")";
     }
 
@@ -71,8 +72,9 @@ public:
     {
         if (m_tcp)
         {
-            m_tcp->onStreamClosed(std::bind(&Connection::handleClose, this));
-            m_tcp->read_start(std::bind(&Connection::handleRead, this, std::placeholders::_1));
+            m_tcp->onRead(std::bind(&Connection::handleRead, this, std::placeholders::_1));
+            m_tcp->onDisconnect(std::bind(&Connection::handleClose, this));
+            m_tcp->read_start();
         }
     }
 

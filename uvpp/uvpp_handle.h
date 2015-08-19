@@ -22,6 +22,7 @@ public:
 
     virtual ~Handle()
     {
+        handle()->data = nullptr;
         close();
     }
 
@@ -61,14 +62,13 @@ public:
         uv_has_ref(handle<uv_handle_t>());
     }
 
-private:
-    HANDLE_T *m_handle;
-
     void close()
     {
         uv_close(handle<uv_handle_t>(), close_cb);
     }
 
+private:
+    HANDLE_T *m_handle;
     static void close_cb(uv_handle_t* handle)
     {
         HANDLE_T* _handle = reinterpret_cast<HANDLE_T *>(handle);

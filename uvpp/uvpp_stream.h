@@ -23,9 +23,8 @@ public:
         handle()->data = this;
     }
 
-    bool listen(const NewConnectionCallback &onNewConnection)
+    bool listen()
     {
-        m_onNewConnection = onNewConnection;
         return uv_listen(handle<uv_stream_t>(), 128, stream_connection_cb)==0;
     }
 
@@ -35,9 +34,8 @@ public:
     }
 
     //Start read data from the connected endpoint.
-    int read_start(const ReadCallback &onRead)
+    int read_start()
     {
-        m_onRead = onRead;
         return uv_read_start(handle<uv_stream_t>(), stream_alloc_cb, stream_read_cb);
     }
 
@@ -71,11 +69,18 @@ public:
         return true;
     }
 
-    //Shutdown the write side of this Stream.
-    int shutdown()
+    struct stream_shutdown_ctx
     {
-        uv_shutdown_t* req = new uv_shutdown_t;
-        int err =  uv_shutdown(req, handle<uv_stream_t>(), stream_shutdown_cb);
+        uv_shutdown_t req;
+        ShutdownCallback callback;
+    };
+
+    //Shutdown the write side of this Stream.
+    int shutdown(const ShutdownCallback &cb = nullptr)
+    {
+        stream_shutdown_ctx* req = new stream_shutdown_ctx;
+        req->callback = cb;
+        int err =  uv_shutdown((uv_shutdown_t *)req, handle<uv_stream_t>(), stream_shutdown_cb);
         if (err<0)
         {
             delete req;
@@ -96,22 +101,57 @@ public:
         return uv_is_writable(handle<uv_stream_t>());
     }   
 
-    void onStreamClosed(const StreamClosedCallback &cb)
+    void onNewConnection(const NewConnectionCallback &cb)
     {
-        m_onStreamClosed = cb;
+        m_onNewConnection = cb;
+    }
+
+    void onRead(const ReadCallback &cb)
+    {
+        m_onRead = cb;
+    }
+
+    void onDisconnect(const DisconnectCallback &cb)
+    {
+        m_onDisconnect = cb;
     }
 
 private:
     DISABLE_COPY(Stream)
-    static void stream_write_cb(uv_write_t* req, int status)
+    static void stream_connection_cb(uv_stream_t* server, int /*status*/)
     {
-        stream_write_ctx *ctx = (stream_write_ctx *)req;
-        if (ctx->callback)
+        if (!server->data) return;
+        Stream *_this = reinterpret_cast<Stream *>(server->data);
+        if (_this->m_onNewConnection)
         {
-            ctx->callback(status);
+            _this->m_onNewConnection();
         }
-        delete ctx;
     }
+
+    static void stream_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
+    {
+        //nread is > 0 if there is data available, 0 if libuv is done reading for now, or < 0 on error.
+        if (!stream->data) return;
+        Stream *_this = reinterpret_cast<Stream *>(stream->data);
+        if (nread>0)
+        {
+            QByteArray ba(buf->base, nread);
+            if (_this->m_onRead)
+            {
+                _this->m_onRead(ba);
+            }
+        }
+        else if (nread<0)
+        {
+            if (_this->m_onDisconnect)
+            {
+                _this->m_onDisconnect();
+            }
+        }
+        Loop* loop = (Loop *)stream->loop->data;
+        loop->buffer.in_use = false;
+    }
+
 
     static void stream_alloc_cb(uv_handle_t* handle, size_t /*suggested_size*/, uv_buf_t* buf)
     {
@@ -129,47 +169,29 @@ private:
         }
     }
 
-    static void stream_read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
+    static void stream_write_cb(uv_write_t* req, int status)
     {
-        //nread is > 0 if there is data available, 0 if libuv is done reading for now, or < 0 on error.
-        Stream *_this = reinterpret_cast<Stream *>(stream->data);
-        if (nread>0)
+        stream_write_ctx *ctx = (stream_write_ctx *)req;
+        if (ctx->callback)
         {
-            QByteArray ba(buf->base, nread);
-            if (_this->m_onRead)
-            {
-                _this->m_onRead(ba);
-            }
+            ctx->callback(status);
         }
-        else if (nread<0)
-        {
-            _this->read_stop();
-            if (_this->m_onStreamClosed)
-            {
-                _this->m_onStreamClosed();
-            }
-        }
-        Loop* loop = (Loop *)stream->loop->data;
-        loop->buffer.in_use = false;
+        delete ctx;
     }
 
     static void stream_shutdown_cb(uv_shutdown_t* req, int /*status*/)
     {
-        delete req;
-    }
-
-    static void stream_connection_cb(uv_stream_t* server, int /*status*/)
-    {
-        Stream *_this = reinterpret_cast<Stream *>(server->data);
-        if (_this->m_onNewConnection)
+        stream_shutdown_ctx *ctx = (stream_shutdown_ctx *)req;
+        if (ctx->callback)
         {
-            _this->m_onNewConnection();
+            ctx->callback();
         }
+        delete ctx;
     }
 
     NewConnectionCallback m_onNewConnection;
-    StreamClosedCallback m_onStreamClosed;
     ReadCallback m_onRead;
+    DisconnectCallback m_onDisconnect;
 };
 }
 

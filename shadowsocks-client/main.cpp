@@ -82,7 +82,7 @@ private:
 int gSessionCount = 0;
 class Session
 {
-public:
+public:    
     Session(const uvpp::ConnectionPtr &conn, const QByteArray& data):
         m_local(conn),
         m_tcp(conn->loop()),
@@ -92,8 +92,9 @@ public:
         qDebug()<<"Session Constructor("<<this<<")"<<"("<<m_local.get()<<")";
         localMessage(data);
         conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
-        m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, std::placeholders::_1));
-        m_tcp.onStreamClosed(std::bind(&Session::onRemoteClosed, this));
+        m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, conn, std::placeholders::_1));
+        m_tcp.onRead(std::bind(&Session::remoteMessage, this, std::placeholders::_1));
+        m_tcp.onDisconnect(std::bind(&Session::onRemoteClosed, this));
     }
 
     ~Session()
@@ -124,8 +125,15 @@ private:
         }
     }
 
-    void remoteConnected(bool connected)
+    void remoteConnected(const uvpp::ConnectionWeakPtr &conn, bool connected)
     {
+        //为什么这儿要加入conn呢, 因为要监控远程是否已关闭,这关系着 session是否还活着
+        uvpp::ConnectionPtr p = conn.lock();
+        if (!p || !p->context)
+        {
+            qDebug()<<"--------------------------remoteConnected expired----------------------------";
+            return;
+        }
         if (connected)
         {
             qDebug()<<"Session remote connected("<<this<<")"<<"("<<m_local.get()<<")";
@@ -135,7 +143,7 @@ private:
                 m_tcp.write(m_dataToWrite, nullptr);
                 m_dataToWrite.clear();
             }
-            m_tcp.read_start(std::bind(&Session::remoteMessage, this, std::placeholders::_1));
+            m_tcp.read_start();
         }
     }
 
@@ -235,7 +243,7 @@ private:
 
 void runThread()
 {
-    uvpp::Thread* thread = new uvpp::Thread([]()
+    uvpp::Thread* thread = new uvpp::Thread([&thread]()
     {
         uvpp::Loop loop;
         uvpp::TcpServer server(&loop);
@@ -247,7 +255,10 @@ void runThread()
 
         qDebug()<<"listen:"<< server.listen("0.0.0.0", 1081);
         loop.run();
+        delete thread;
     });
+    Q_UNUSED(thread)
+
 
 }
 

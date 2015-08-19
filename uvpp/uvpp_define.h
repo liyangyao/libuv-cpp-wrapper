@@ -17,7 +17,8 @@ namespace uvpp{
 
 //typedef std::function<void()> Callback;
 typedef std::function<void()> NewConnectionCallback;
-typedef std::function<void()> StreamClosedCallback;
+typedef std::function<void()> ShutdownCallback;
+typedef std::function<void()> DisconnectCallback;
 typedef std::function<void(bool connected)> ConnectCallback;
 typedef std::function<void(const QByteArray &data)> ReadCallback;
 typedef std::function<void(int status)> WriteCallback;
