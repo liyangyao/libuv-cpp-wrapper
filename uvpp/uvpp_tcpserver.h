@@ -78,6 +78,7 @@ private:
            fun();
         });
         m_functors.clear();
+        m_idle.stop();
     }
 
     DISABLE_COPY(TcpServer)
