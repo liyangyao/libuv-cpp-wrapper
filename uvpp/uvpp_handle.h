@@ -18,12 +18,25 @@ public:
     explicit Handle()
     {
         m_handle = new HANDLE_T;
+        handle()->data = this;
     }
 
     virtual ~Handle()
     {
-        handle()->data = nullptr;
-        close();
+        if (is_closeing())
+        {
+            if (handle()->data)
+            {
+                handle()->data = nullptr;//wait close over
+            }
+            else{
+                delete handle();//real closed
+            }
+        }
+        else{
+            handle()->data = nullptr;//handle_close_cb will not call m_onClose
+            close();
+        }
     }
 
     HANDLE_T *handle()
@@ -64,15 +77,32 @@ public:
 
     void close()
     {
-        uv_close(handle<uv_handle_t>(), close_cb);
+        uv_close(handle<uv_handle_t>(), handle_close_cb);
+    }
+
+    void onClose(const CloseCallback &cb)
+    {
+        m_onClose = cb;
     }
 
 private:
     HANDLE_T *m_handle;
-    static void close_cb(uv_handle_t* handle)
+    CloseCallback m_onClose;
+    static void handle_close_cb(uv_handle_t* handle)
     {
         HANDLE_T* _handle = reinterpret_cast<HANDLE_T *>(handle);
-        delete _handle;
+        if (_handle->data)
+        {
+            Handle* _this = (Handle *)_handle->data;
+            if (_this->m_onClose)
+            {
+                _this->m_onClose();
+            }
+            _handle->data = nullptr;//real closed
+        }
+        else{
+            delete _handle;
+        }
     }
     DISABLE_COPY(Handle)
 };

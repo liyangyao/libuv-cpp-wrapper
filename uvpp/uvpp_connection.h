@@ -73,7 +73,7 @@ public:
         if (m_tcp)
         {
             m_tcp->onRead(std::bind(&Connection::handleRead, this, std::placeholders::_1));
-            m_tcp->onDisconnect(std::bind(&Connection::handleClose, this));
+            m_tcp->onClose(std::bind(&Connection::handleClose, this));
             m_tcp->read_start();
         }
     }
@@ -91,16 +91,15 @@ private:
     DISABLE_COPY(Connection)
     void handleClose()
     {
-        //qDebug()<<"Connection handleClose("<<this<<")";
+        ConnectionPtr guard(shared_from_this());
         if (closeCallback)
         {
-            closeCallback(shared_from_this());
+            closeCallback(guard);
         }
     }
 
     void handleRead(const QByteArray &data)
     {
-        //qDebug()<<"Connection handleRead("<<this<<")";
         if (messageCallback)
         {
             messageCallback(shared_from_this(), data);

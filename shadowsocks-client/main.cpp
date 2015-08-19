@@ -94,7 +94,7 @@ public:
         conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
         m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, conn, std::placeholders::_1));
         m_tcp.onRead(std::bind(&Session::remoteMessage, this, std::placeholders::_1));
-        m_tcp.onDisconnect(std::bind(&Session::onRemoteClosed, this));
+        m_tcp.onClose(std::bind(&Session::onRemoteClosed, this));
     }
 
     ~Session()

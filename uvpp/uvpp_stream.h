@@ -111,11 +111,6 @@ public:
         m_onRead = cb;
     }
 
-    void onDisconnect(const DisconnectCallback &cb)
-    {
-        m_onDisconnect = cb;
-    }
-
 private:
     DISABLE_COPY(Stream)
     static void stream_connection_cb(uv_stream_t* server, int /*status*/)
@@ -143,10 +138,7 @@ private:
         }
         else if (nread<0)
         {
-            if (_this->m_onDisconnect)
-            {
-                _this->m_onDisconnect();
-            }
+            _this->close();
         }
         Loop* loop = (Loop *)stream->loop->data;
         loop->buffer.in_use = false;
@@ -191,7 +183,6 @@ private:
 
     NewConnectionCallback m_onNewConnection;
     ReadCallback m_onRead;
-    DisconnectCallback m_onDisconnect;
 };
 }
 

@@ -21,8 +21,7 @@ class TcpServer
 public:
     explicit TcpServer(Loop* loop):
         m_loop(loop),
-        m_tcpServer(loop),
-        m_idle(loop, std::bind(&TcpServer::handleCallFunctor, this))
+        m_tcpServer(loop)
     {
 
     }
@@ -40,8 +39,6 @@ public:
 private:
     Loop* m_loop;
     Tcp m_tcpServer;
-    Idle m_idle;
-    std::vector<Functor> m_functors;
 
     std::unordered_map<int, ConnectionPtr> m_connections;
 
@@ -62,25 +59,16 @@ private:
 
     void hanleConnectionClose(const ConnectionPtr &connection)
     {
-        m_functors.emplace_back(std::bind(&Connection::connectionDestroyed, connection));
-        m_idle.start();
-        m_connections.erase(connection->id());
+
+        qDebug()<<"hanleConnectionClose #1";
         if (onConnectionClose)
         {
             onConnectionClose(connection);
         }
+        connection->connectionDestroyed();
+        m_connections.erase(connection->id());
+        qDebug()<<"hanleConnectionClose #2";
     }
-
-    void handleCallFunctor()
-    {
-        std::for_each(m_functors.begin(), m_functors.end(), [](const Functor &fun)
-        {
-           fun();
-        });
-        m_functors.clear();
-        m_idle.stop();
-    }
-
     DISABLE_COPY(TcpServer)
 };
 }
