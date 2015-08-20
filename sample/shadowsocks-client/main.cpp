@@ -265,10 +265,11 @@ void runThread()
 
 int main(int argc, char *argv[])
 {
-    InstallDump();
+    InstallDump();    
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
     QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
     QApplication a(argc, argv);
+    qDebug()<<uv_version_string();
     QFont f = a.font();
     f.setPointSize(9);
     a.setFont(f);

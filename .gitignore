@@ -24,4 +24,6 @@
 *.app
 build-*
 *.pro.user
-*/bin/*
+bin/
+*.lib
+
