@@ -30,13 +30,13 @@ public:
 
     bool accept(Stream *client)
     {
-        return uv_accept(handle<uv_stream_t>(), client->handle<uv_stream_t>())>=0;
+        return uv_accept(handle<uv_stream_t>(), client->handle<uv_stream_t>())==0;
     }
 
     //Start read data from the connected endpoint.
-    int read_start()
+    bool read_start()
     {
-        return uv_read_start(handle<uv_stream_t>(), stream_alloc_cb, stream_read_cb);
+        return uv_read_start(handle<uv_stream_t>(), stream_alloc_cb, stream_read_cb)==0;
     }
 
     bool read_stop()
@@ -61,7 +61,7 @@ public:
         buf = uv_buf_init(req->buffer.data(), req->buffer.size());
 
         int err = uv_write(&req->req, handle<uv_stream_t>(), &buf, 1, stream_write_cb);
-        if (err<0)
+        if (err!=0)
         {
             delete req;
             return false;
@@ -76,12 +76,12 @@ public:
     };
 
     //Shutdown the write side of this Stream.
-    int shutdown(const ShutdownCallback &cb = nullptr)
+    bool shutdown(const ShutdownCallback &cb = nullptr)
     {
         stream_shutdown_ctx* req = new stream_shutdown_ctx;
         req->callback = cb;
         int err =  uv_shutdown((uv_shutdown_t *)req, handle<uv_stream_t>(), stream_shutdown_cb);
-        if (err<0)
+        if (err!=0)
         {
             delete req;
             return false;

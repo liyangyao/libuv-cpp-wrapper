@@ -19,7 +19,6 @@ Date: 2015/8/17
 #include "uvpp_async.h"
 #include "uvpp_idle.h"
 #include "uvpp_asyncfunctor.h"
-#include "uvpp_tcpserver.h"
 
 
 #endif // UVPP_H

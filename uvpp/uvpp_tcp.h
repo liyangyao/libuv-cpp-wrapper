@@ -24,22 +24,22 @@ public:
     }
 
     //Bind to the specified IP and port.
-    int bind(const char *ip, int port)
+    bool bind(const char *ip, int port)
     {
         struct sockaddr_in addr;
         uv_ip4_addr(ip, port, &addr);
         return uv_tcp_bind(handle(), reinterpret_cast<const struct sockaddr *>
-                           (&addr), 0);
+                           (&addr), 0)==0;
     }
 
-    int nodelay(int enable)
+    bool nodelay(int enable)
     {
-        return uv_tcp_nodelay(handle(), enable);
+        return uv_tcp_nodelay(handle(), enable)==0;
     }
 
-    int keepalive(int enable, unsigned int delay)
+    bool keepalive(int enable, unsigned int delay)
     {
-        return uv_tcp_keepalive(handle(), enable, delay);
+        return uv_tcp_keepalive(handle(), enable, delay)==0;
     }
 
     struct tcp_connect_ctx
@@ -59,7 +59,7 @@ public:
         int err = uv_tcp_connect((uv_connect_t *)req, handle(),
                               reinterpret_cast<const struct sockaddr *>(&addr),
                               tcp_connect_cb);
-        if (err<0)
+        if (err!=0)
         {
             delete req;
             return false;
@@ -67,20 +67,7 @@ public:
         return true;
     }
 
-    QString getsockname()
-    {
-        struct sockaddr_in name;
-        int namelen = sizeof(name);
-        uv_tcp_getsockname(handle(), (struct sockaddr*) &name, &namelen);
-
-        char addr[16];
-        uv_inet_ntop(AF_INET, &name.sin_addr, addr, sizeof(addr));
-
-        QString sockname = addr;
-        return sockname;
-    }
-
-    QString getpeername()
+    QString getPeerName()
     {
         struct sockaddr_in name;
         int namelen = sizeof(name);
@@ -92,7 +79,6 @@ public:
         QString peername = addr;
         return peername;
     }
-
 
 private:    
     DISABLE_COPY(Tcp)

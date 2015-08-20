@@ -10,8 +10,8 @@ Date: 2015/8/18
 
 #include <deque>
 #include <memory>
-#include <uvpp_async.h>
-#include <uvpp_thread.h>
+#include <uvpp/uvpp_async.h>
+#include <uvpp/uvpp_thread.h>
 
 namespace uvpp{
 

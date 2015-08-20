@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/icon">
-        <file>lfinger1.ico</file>
-        <file>lfinger0.ico</file>
-    </qresource>
-</RCC>

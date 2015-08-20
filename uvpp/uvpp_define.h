@@ -11,7 +11,7 @@ Date: 2015/8/17
 #include <memory>
 #include <functional>
 #include <QObject>
-#include <libuv/include/uv.h>
+#include <libuv/uv.h>
 
 namespace uvpp{
 
