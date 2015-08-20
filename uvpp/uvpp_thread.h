@@ -130,6 +130,7 @@ private:
         {
             _this->m_functor();
         }
+        delete _this;
     }
     DISABLE_COPY(Thread);
 };
