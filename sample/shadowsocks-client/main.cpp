@@ -11,7 +11,7 @@
 #include <DbgHelp.h>
 #include <Windows.h>
 #include "botan_wrapper.h"
-#include <tcpserver/tcpserver.h>
+#include <misc/tcpserver.h>
 
 #pragma execution_character_set("utf-8")
 
