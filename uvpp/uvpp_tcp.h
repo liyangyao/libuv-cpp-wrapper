@@ -46,6 +46,7 @@ public:
     {
         uv_connect_t req;
         ConnectCallback callback;
+        ReqStatus status;
     };
 
     //Start connecion to remote endpoint.
@@ -53,17 +54,21 @@ public:
     {
         struct sockaddr_in addr;
         uv_ip4_addr(ip, port, &addr);
-        tcp_connect_ctx *req = new tcp_connect_ctx;
-        req->callback = onConnect;
+        tcp_connect_ctx *ctx = new tcp_connect_ctx;
+        ctx->req.data = this;
+        ctx->callback = onConnect;
 
-        int err = uv_tcp_connect((uv_connect_t *)req, handle(),
+        int err = uv_tcp_connect(&ctx->req, handle(),
                               reinterpret_cast<const struct sockaddr *>(&addr),
                               tcp_connect_cb);
         if (err!=0)
         {
-            delete req;
+            delete ctx;
             return false;
         }
+        qDebug()<<"connect #1";
+        registReqStatus(&ctx->status);
+        qDebug()<<"connect #2";
         return true;
     }
 
@@ -85,10 +90,18 @@ private:
     static void tcp_connect_cb(uv_connect_t* req, int status)
     {
         tcp_connect_ctx *ctx = (tcp_connect_ctx *)req;
+        if (ctx->status.expired)
+        {
+            qDebug()<<"tcp_connect_cb ---------------expired-------------";
+            return;
+        }
+
         if (ctx->callback)
         {
             ctx->callback(status==0);
         }
+        Tcp *_this = (Tcp *)req->data;
+        _this->unregistReqStatus(&ctx->status);
         delete ctx;
     }
 };

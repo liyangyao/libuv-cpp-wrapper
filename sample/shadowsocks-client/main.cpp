@@ -263,6 +263,30 @@ void runThread()
 
 }
 
+void test()
+{
+    uvpp::Thread* thread = new uvpp::Thread([&thread]()
+    {
+        uvpp::Loop loop;
+
+        {
+        uvpp::Tcp tcp(&loop);
+        tcp.connect("111.13.100.91", 80, [](bool connected)
+        {
+            qDebug()<<"Connected www.baidu.com";
+        });
+        }
+        uvpp::Timer timer(&loop);
+        timer.start([]()
+        {
+
+        }, 1000, 1000);
+        loop.run();
+
+    });
+    Q_UNUSED(thread)
+}
+
 int main(int argc, char *argv[])
 {
     InstallDump();    
@@ -277,6 +301,7 @@ int main(int argc, char *argv[])
     MainForm w;
     w.show();
     runThread();
+    //test();
 
 
     return a.exec();

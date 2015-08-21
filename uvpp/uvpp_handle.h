@@ -51,7 +51,7 @@ public:
         return uv_is_active(handle<uv_handle_t>());
     }
 
-    bool is_closeing()
+    bool is_closing()
     {
         return uv_is_closing(handle<uv_handle_t>());
     }
