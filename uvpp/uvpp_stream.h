@@ -20,7 +20,6 @@ public:
     explicit Stream():
         Handle<HANDLE_T>()
     {
-        handle()->data = this;
     }
 
     bool listen()

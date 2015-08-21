@@ -22,7 +22,6 @@ public:
         m_functor(functor)
     {
         uv_idle_init(loop->handle(), handle());
-        handle()->data = this;
     }
 
     void start()

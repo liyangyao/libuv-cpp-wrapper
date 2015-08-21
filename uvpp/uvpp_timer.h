@@ -11,7 +11,6 @@ public:
     Timer(Loop* loop):
         Handle<uv_timer_t>()
     {
-        handle()->data = this;
         uv_timer_init(loop->handle(), handle());
     }
 

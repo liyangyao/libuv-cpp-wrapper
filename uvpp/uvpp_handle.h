@@ -23,18 +23,14 @@ public:
 
     virtual ~Handle()
     {
-        if (is_closeing())
+        if (is_closed())
         {
-            if (handle()->data)
-            {
-                handle()->data = nullptr;//wait close over
-            }
-            else{
-                delete handle();//real closed
-            }
+            delete handle();
+            return;
         }
-        else{
-            handle()->data = nullptr;//handle_close_cb will not call m_onClose
+        handle()->data = nullptr;
+        if (!is_closing())
+        {
             close();
         }
     }
@@ -58,6 +54,11 @@ public:
     bool is_closeing()
     {
         return uv_is_closing(handle<uv_handle_t>());
+    }
+
+    bool is_closed()
+    {
+        return nullptr==handle()->data;
     }
 
     void ref()
@@ -94,11 +95,13 @@ private:
         if (_handle->data)
         {
             Handle* _this = (Handle *)_handle->data;
-            if (_this->m_onClose)
+            CloseCallback cb = _this->m_onClose;
+            handle->data = nullptr;
+            _this->m_onClose = nullptr;
+            if (cb)
             {
-                _this->m_onClose();
+                cb();
             }
-            _handle->data = nullptr;//real closed
         }
         else{
             delete _handle;
