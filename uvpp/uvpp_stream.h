@@ -15,11 +15,54 @@ Date: 2015/8/17
 
 namespace uvpp{
 
+#ifdef CHECK_UV_REQ
+namespace detail
+{
+
 struct ReqStatus
 {
     bool expired;
     QUEUE node;
 };
+
+class ReqStatusQueue
+{
+public:
+    ReqStatusQueue()
+    {
+        QUEUE_INIT(&m_reqStatusQueue);
+    }
+    ~ReqStatusQueue()
+    {
+        QUEUE* q;
+        QUEUE_FOREACH(q, &m_reqStatusQueue)
+        {
+            ReqStatus* req = QUEUE_DATA(q, ReqStatus, node);
+            req->expired = true;
+        }
+    }
+
+    void push_back(ReqStatus* reqStatus)
+    {
+        reqStatus->expired = false;
+        QUEUE_INSERT_TAIL(&m_reqStatusQueue, &reqStatus->node);
+    }
+
+    void remove(ReqStatus* reqStatus)
+    {
+        QUEUE_REMOVE(&reqStatus->node);
+    }
+
+    bool isExpired(ReqStatus* reqStatus)
+    {
+        return reqStatus->expired;
+    }
+
+private:
+    QUEUE m_reqStatusQueue;
+};
+}
+#endif
 
 template <typename HANDLE_T>
 class Stream: public Handle<HANDLE_T>
@@ -28,17 +71,10 @@ public:
     explicit Stream():
         Handle<HANDLE_T>()
     {
-        QUEUE_INIT(&m_reqStatusQueue);
     }
 
     ~Stream()
     {
-        QUEUE* q;
-        QUEUE_FOREACH(q, &m_reqStatusQueue)
-        {
-            ReqStatus* req = QUEUE_DATA(q, ReqStatus, node);
-            req->expired = true;
-        }
     }
 
     bool listen()
@@ -67,15 +103,16 @@ public:
         uv_write_t req;
         QByteArray buffer;
         WriteCallback callback;
-        ReqStatus status;
+#ifdef CHECK_UV_REQ
+        detail::ReqStatus status;
+#endif
     };
 
     //Write data on the stream
     bool write(const QByteArray &data, const WriteCallback &cb = nullptr)
     {
         stream_write_ctx *ctx = new stream_write_ctx;
-        ctx->buffer = data;
-        ctx->req.data = this;
+        ctx->buffer = data;        
         ctx->callback = cb;
         uv_buf_t buf;
         buf = uv_buf_init(ctx->buffer.data(), ctx->buffer.size());
@@ -86,7 +123,10 @@ public:
             delete ctx;
             return false;
         }
-        registReqStatus(&ctx->status);
+#ifdef CHECK_UV_REQ
+        ctx->req.data = this;
+        m_reqStatusQueue.push_back(&ctx->status);
+#endif
         return true;
     }
 
@@ -94,14 +134,15 @@ public:
     {
         uv_shutdown_t req;
         ShutdownCallback callback;
-        ReqStatus status;
+#ifdef CHECK_UV_REQ
+        detail::ReqStatus status;
+#endif
     };
 
     //Shutdown the write side of this Stream.
     bool shutdown(const ShutdownCallback &cb = nullptr)
     {
-        stream_shutdown_ctx* ctx = new stream_shutdown_ctx;
-        ctx->req.data = this;
+        stream_shutdown_ctx* ctx = new stream_shutdown_ctx;        
         ctx->callback = cb;
         int err =  uv_shutdown(&ctx->req, handle<uv_stream_t>(), stream_shutdown_cb);
         if (err!=0)
@@ -109,7 +150,10 @@ public:
             delete ctx;
             return false;
         }
-        registReqStatus(&ctx->status);
+#ifdef CHECK_UV_REQ
+        ctx->req.data = this;
+        m_reqStatusQueue.push_back(&ctx->status);
+#endif
         return true;
     }
 
@@ -135,16 +179,10 @@ public:
         m_onRead = cb;
     }
 
-    void registReqStatus(ReqStatus* reqStatus)
-    {
-        reqStatus->expired = false;
-        QUEUE_INSERT_TAIL(&m_reqStatusQueue, &reqStatus->node);
-    }
-
-    void unregistReqStatus(ReqStatus* reqStatus)
-    {
-        QUEUE_REMOVE(&reqStatus->node);
-    }
+#ifdef CHECK_UV_REQ
+protected:
+    detail::ReqStatusQueue m_reqStatusQueue;
+#endif
 
 private:
     DISABLE_COPY(Stream)
@@ -198,41 +236,43 @@ private:
 
     static void stream_write_cb(uv_write_t* req, int status)
     {
-        stream_write_ctx *ctx = (stream_write_ctx *)req;
-        if (ctx->status.expired)
+        stream_write_ctx *ctx = UV_CONTAINER_OF(req, stream_write_ctx, req);
+#ifdef CHECK_UV_REQ
+        Stream *_this = (Stream *)req->data;
+        if (_this->m_reqStatusQueue.isExpired(&ctx->status))
         {
-            qDebug()<<"stream_write_cb ---------------expired-------------";
             return;
         }
+        _this->m_reqStatusQueue.remove(&ctx->status);
+#endif
         if (ctx->callback)
         {
             ctx->callback(status);
         }
-        Stream *_this = (Stream *)req->data;
-        _this->unregistReqStatus(&ctx->status);
         delete ctx;
     }
 
     static void stream_shutdown_cb(uv_shutdown_t* req, int /*status*/)
     {
-        stream_shutdown_ctx *ctx = (stream_shutdown_ctx *)req;
-        if (ctx->status.expired)
+        stream_shutdown_ctx *ctx = UV_CONTAINER_OF(req, stream_shutdown_ctx, req);
+#ifdef CHECK_UV_REQ
+        Stream *_this = (Stream *)req->data;
+        if (_this->m_reqStatusQueue.isExpired(&ctx->status))
         {
-            qDebug()<<"stream_shutdown_cb ---------------expired-------------";
             return;
         }
+        _this->m_reqStatusQueue.remove(&ctx->status);
+#endif
         if (ctx->callback)
         {
             ctx->callback();
         }
-        Stream *_this = (Stream *)req->data;
-        _this->unregistReqStatus(&ctx->status);
+
         delete ctx;
     }
 
     NewConnectionCallback m_onNewConnection;
     ReadCallback m_onRead;
-    QUEUE m_reqStatusQueue;
 };
 }
 

@@ -29,6 +29,9 @@ typedef std::function<void(const QByteArray &data)> DataCallback;
 typedef std::function<void()> TimerCallback;
 typedef std::function<void()> Functor;
 
+#define UV_CONTAINER_OF(ptr, type, field)                                  \
+      ((type *) ((char *) (ptr) - ((long) &((type *) 0)->field)))
+
 #define DISABLE_COPY(Class) \
     explicit Class(const Class &); \
     Class &operator=(const Class &);

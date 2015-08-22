@@ -9,8 +9,10 @@ Date: 2015/7/31
 #define SINGLETON_H
 
 #include <memory>
-#include <libuv/include/uv.h>
+#include <libuv/uv.h>
 
+namespace uvpp
+{
 template <class T>
 class Singleton
 {
@@ -44,5 +46,6 @@ uv_once_t Singleton<T>::m_once = UV_ONCE_INIT;
 
 template <class T>
 std::unique_ptr<T> Singleton<T>::m_instance;
+}
 
 #endif // SINGLETON_H

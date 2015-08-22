@@ -270,11 +270,11 @@ void test()
         uvpp::Loop loop;
 
         {
-        uvpp::Tcp tcp(&loop);
-        tcp.connect("111.13.100.91", 80, [](bool connected)
-        {
-            qDebug()<<"Connected www.baidu.com";
-        });
+            uvpp::Tcp tcp(&loop);
+            tcp.connect("111.13.100.91", 80, [](bool connected)
+            {
+                qDebug()<<"Connected www.baidu.com";
+            });
         }
         uvpp::Timer timer(&loop);
         timer.start([]()

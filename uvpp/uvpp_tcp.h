@@ -46,7 +46,9 @@ public:
     {
         uv_connect_t req;
         ConnectCallback callback;
-        ReqStatus status;
+#ifdef CHECK_UV_REQ
+        detail::ReqStatus status;
+#endif
     };
 
     //Start connecion to remote endpoint.
@@ -55,7 +57,6 @@ public:
         struct sockaddr_in addr;
         uv_ip4_addr(ip, port, &addr);
         tcp_connect_ctx *ctx = new tcp_connect_ctx;
-        ctx->req.data = this;
         ctx->callback = onConnect;
 
         int err = uv_tcp_connect(&ctx->req, handle(),
@@ -66,9 +67,10 @@ public:
             delete ctx;
             return false;
         }
-        qDebug()<<"connect #1";
-        registReqStatus(&ctx->status);
-        qDebug()<<"connect #2";
+#ifdef CHECK_UV_REQ
+        ctx->req.data = this;
+        m_reqStatusQueue.push_back(&ctx->status);
+#endif
         return true;
     }
 
@@ -89,19 +91,21 @@ private:
     DISABLE_COPY(Tcp)
     static void tcp_connect_cb(uv_connect_t* req, int status)
     {
-        tcp_connect_ctx *ctx = (tcp_connect_ctx *)req;
-        if (ctx->status.expired)
+        tcp_connect_ctx *ctx = UV_CONTAINER_OF(req, tcp_connect_ctx, req);
+#ifdef CHECK_UV_REQ
+        Tcp *_this = (Tcp *)req->data;
+        if (_this->m_reqStatusQueue.isExpired(&ctx->status))
         {
             qDebug()<<"tcp_connect_cb ---------------expired-------------";
             return;
         }
+        _this->m_reqStatusQueue.remove(&ctx->status);
+#endif
 
         if (ctx->callback)
         {
             ctx->callback(status==0);
         }
-        Tcp *_this = (Tcp *)req->data;
-        _this->unregistReqStatus(&ctx->status);
         delete ctx;
     }
 };
