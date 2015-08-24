@@ -9,10 +9,13 @@ Date: 2015/8/18
 #define UVPP_CONNECTION_H
 
 #include <uvpp/uvpp_tcp.h>
+#include <QDebug>
 
+class Entry;
 namespace uvpp{
 
 class Connection;
+
 typedef std::shared_ptr<Connection> ConnectionPtr;
 typedef std::weak_ptr<Connection> ConnectionWeakPtr;
 class Connection:public std::enable_shared_from_this<Connection>
@@ -23,6 +26,7 @@ public:
     typedef std::function<void(const ConnectionPtr &)> CloseCallback;
     MessageCallback messageCallback;
     CloseCallback closeCallback;
+    std::weak_ptr<Entry> entry;
     std::shared_ptr<void> context;
     explicit Connection(std::unique_ptr<Tcp> &tcp):
         m_tcp(std::move(tcp))
