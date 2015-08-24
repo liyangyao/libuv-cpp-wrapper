@@ -5,8 +5,8 @@ Date: 2015/6/29
 
 ****************************************************************************/
 
-#ifndef BLOCKINGQUEUE_H
-#define BLOCKINGQUEUE_H
+#ifndef UVPP_BLOCKINGQUEUE_H
+#define UVPP_BLOCKINGQUEUE_H
 
 #include <deque>
 #include "uv.h"

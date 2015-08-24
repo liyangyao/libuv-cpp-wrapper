@@ -5,8 +5,8 @@ Date: 2015/6/26
 
 ****************************************************************************/
 
-#ifndef SCOPEEXIT_H
-#define SCOPEEXIT_H
+#ifndef UVPP_SCOPEEXIT_H
+#define UVPP_SCOPEEXIT_H
 
 #include <functional>
 

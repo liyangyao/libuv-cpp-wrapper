@@ -11,7 +11,7 @@ Date: 2015/8/18
 #include <vector>
 #include <unordered_map>
 #include <uvpp/uvpp_idle.h>
-#include <misc/connection.h>
+#include <uvpp/net/connection.h>
 
 
 namespace uvpp{

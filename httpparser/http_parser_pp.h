@@ -5,8 +5,8 @@ Date: 2015/6/25
 
 ****************************************************************************/
 
-#ifndef HTTPPARSER_H
-#define HTTPPARSER_H
+#ifndef UVPP_HTTPPARSER_H
+#define UVPP_HTTPPARSER_H
 
 #include <functional>
 #include <memory>

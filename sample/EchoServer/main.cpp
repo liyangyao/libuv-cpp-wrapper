@@ -1,13 +1,13 @@
 #include <QCoreApplication>
 #include <uvpp/uvpp.h>
-#include <misc/tcpserver.h>
+#include <uvpp/net/tcpserver.h>
 #include <QDebug>
 #include <queue>
 #include <unordered_set>
 #include <set>
 #include <QCryptographicHash>
 
-#include <misc/threadlocal.h>
+#include <uvpp/base/threadlocal.h>
 
 int round = -1;
 class Entry
@@ -38,6 +38,11 @@ private:
 typedef std::shared_ptr<Entry> EntryPtr;
 typedef std::weak_ptr<Entry> WeakEntryPtr;
 
+
+class Context
+{
+    WeakEntryPtr entry;
+};
 
 typedef std::set<EntryPtr> Bucket;
 std::queue<Bucket> queue;

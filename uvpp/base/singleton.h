@@ -5,8 +5,8 @@ Date: 2015/7/31
 
 ****************************************************************************/
 
-#ifndef SINGLETON_H
-#define SINGLETON_H
+#ifndef UVPP_SINGLETON_H
+#define UVPP_SINGLETON_H
 
 #include <memory>
 #include <libuv/uv.h>
