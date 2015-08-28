@@ -46,9 +46,6 @@ public:
     {
         uv_connect_t req;
         ConnectCallback callback;
-#ifdef CHECK_UV_REQ
-        detail::ReqStatus status;
-#endif
     };
 
     //Start connecion to remote endpoint.
@@ -67,10 +64,6 @@ public:
             delete ctx;
             return false;
         }
-#ifdef CHECK_UV_REQ
-        ctx->req.data = this;
-        m_reqStatusQueue.push_back(&ctx->status);
-#endif
         return true;
     }
 
@@ -92,16 +85,6 @@ private:
     static void tcp_connect_cb(uv_connect_t* req, int status)
     {
         tcp_connect_ctx *ctx = UV_CONTAINER_OF(req, tcp_connect_ctx, req);
-#ifdef CHECK_UV_REQ
-        Tcp *_this = (Tcp *)req->data;
-        if (_this->m_reqStatusQueue.isExpired(&ctx->status))
-        {
-            qDebug()<<"tcp_connect_cb ---------------expired-------------";
-            return;
-        }
-        _this->m_reqStatusQueue.remove(&ctx->status);
-#endif
-
         if (ctx->callback)
         {
             ctx->callback(status==0);

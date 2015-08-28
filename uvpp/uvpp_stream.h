@@ -15,55 +15,6 @@ Date: 2015/8/17
 
 namespace uvpp{
 
-#ifdef CHECK_UV_REQ
-namespace detail
-{
-
-struct ReqStatus
-{
-    bool expired;
-    QUEUE node;
-};
-
-class ReqStatusQueue
-{
-public:
-    ReqStatusQueue()
-    {
-        QUEUE_INIT(&m_reqStatusQueue);
-    }
-    ~ReqStatusQueue()
-    {
-        QUEUE* q;
-        QUEUE_FOREACH(q, &m_reqStatusQueue)
-        {
-            ReqStatus* req = QUEUE_DATA(q, ReqStatus, node);
-            req->expired = true;
-        }
-    }
-
-    void push_back(ReqStatus* reqStatus)
-    {
-        reqStatus->expired = false;
-        QUEUE_INSERT_TAIL(&m_reqStatusQueue, &reqStatus->node);
-    }
-
-    void remove(ReqStatus* reqStatus)
-    {
-        QUEUE_REMOVE(&reqStatus->node);
-    }
-
-    bool isExpired(ReqStatus* reqStatus)
-    {
-        return reqStatus->expired;
-    }
-
-private:
-    QUEUE m_reqStatusQueue;
-};
-}
-#endif
-
 template <typename HANDLE_T>
 class Stream: public Handle<HANDLE_T>
 {
@@ -103,9 +54,6 @@ public:
         uv_write_t req;
         QByteArray buffer;
         WriteCallback callback;
-#ifdef CHECK_UV_REQ
-        detail::ReqStatus status;
-#endif
     };
 
     //Write data on the stream
@@ -123,10 +71,6 @@ public:
             delete ctx;
             return false;
         }
-#ifdef CHECK_UV_REQ
-        ctx->req.data = this;
-        m_reqStatusQueue.push_back(&ctx->status);
-#endif
         return true;
     }
 
@@ -134,9 +78,6 @@ public:
     {
         uv_shutdown_t req;
         ShutdownCallback callback;
-#ifdef CHECK_UV_REQ
-        detail::ReqStatus status;
-#endif
     };
 
     //Shutdown the write side of this Stream.
@@ -150,10 +91,6 @@ public:
             delete ctx;
             return false;
         }
-#ifdef CHECK_UV_REQ
-        ctx->req.data = this;
-        m_reqStatusQueue.push_back(&ctx->status);
-#endif
         return true;
     }
 
@@ -178,11 +115,6 @@ public:
     {
         m_onRead = cb;
     }
-
-#ifdef CHECK_UV_REQ
-protected:
-    detail::ReqStatusQueue m_reqStatusQueue;
-#endif
 
 private:
     DISABLE_COPY(Stream)
@@ -237,14 +169,6 @@ private:
     static void stream_write_cb(uv_write_t* req, int status)
     {
         stream_write_ctx *ctx = UV_CONTAINER_OF(req, stream_write_ctx, req);
-#ifdef CHECK_UV_REQ
-        Stream *_this = (Stream *)req->data;
-        if (_this->m_reqStatusQueue.isExpired(&ctx->status))
-        {
-            return;
-        }
-        _this->m_reqStatusQueue.remove(&ctx->status);
-#endif
         if (ctx->callback)
         {
             ctx->callback(status);
@@ -255,14 +179,6 @@ private:
     static void stream_shutdown_cb(uv_shutdown_t* req, int /*status*/)
     {
         stream_shutdown_ctx *ctx = UV_CONTAINER_OF(req, stream_shutdown_ctx, req);
-#ifdef CHECK_UV_REQ
-        Stream *_this = (Stream *)req->data;
-        if (_this->m_reqStatusQueue.isExpired(&ctx->status))
-        {
-            return;
-        }
-        _this->m_reqStatusQueue.remove(&ctx->status);
-#endif
         if (ctx->callback)
         {
             ctx->callback();

@@ -81,7 +81,7 @@ private:
 };
 
 int gSessionCount = 0;
-class Session
+class Session:public std::enable_shared_from_this<Session>
 {
 public:    
     Session(const uvpp::ConnectionPtr &conn, const QByteArray& data):
@@ -93,7 +93,12 @@ public:
         qDebug()<<"Session Constructor("<<this<<")"<<"("<<m_local.get()<<")";
         localMessage(data);
         conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
-        m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, conn, std::placeholders::_1));
+
+    }
+
+    void init()
+    {
+        m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, shared_from_this(), std::placeholders::_1));
         m_tcp.onRead(std::bind(&Session::remoteMessage, this, std::placeholders::_1));
         m_tcp.onClose(std::bind(&Session::onRemoteClosed, this));
     }
@@ -126,13 +131,12 @@ private:
         }
     }
 
-    void remoteConnected(const uvpp::ConnectionWeakPtr &conn, bool connected)
+    void remoteConnected(const std::weak_ptr<Session> &ref, bool connected)
     {
-        //为什么这儿要加入conn呢, 因为要监控远程是否已关闭,这关系着 session是否还活着
-        uvpp::ConnectionPtr p = conn.lock();
-        if (!p || !p->context)
+
+        if (ref.expired())
         {
-            qDebug()<<"--------------------------remoteConnected expired----------------------------";
+            qDebug()<<"--------------------------Session expired----------------------------";
             return;
         }
         if (connected)
@@ -235,6 +239,7 @@ private:
             conn->write(response);
 
             std::shared_ptr<Session> session(new Session(conn, m_recved.right(m_recved.length()-3)));
+            session->init();
             conn->context = session;
             qDebug()<<"Session("<<session.get()<<")--->"<<aurl;
         }
