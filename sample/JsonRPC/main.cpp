@@ -1,9 +1,10 @@
-#include <QCoreApplication>
+﻿#include <QCoreApplication>
 #include <QVariant>
 #include <QMetaMethod>
 #include <QDebug>
 #include <QTextCodec>
 #include <QVarLengthArray>
+#include <QStringList>
 #include "service.h"
 #pragma execution_character_set("utf-8")
 
@@ -56,49 +57,60 @@ rpc call with invalid Request object:
 <-- {"jsonrpc": "2.0", "error":{"code": -32600, "message": "Invalid Request"},"id": null}
 */
 
-void call(QObject* object, const Json &json)
+class Message
 {
-    QString method = json["method"].toString();
-    QString svrName = method.section(".", 0, 0);
-    method = method.section(".", 1);
-    qDebug()<<"svrName="<<qPrintable(svrName)<<"method="<<method;
-    const QMetaObject *metaObject = object->metaObject();
-    qDebug()<<metaObject->className();
-    for(int i=metaObject->methodOffset();  i<metaObject->methodCount(); i++)
+public:
+    Message(const Json &json)
     {
-        QMetaMethod metaMethod = metaObject->method(i);
-        QString typeName = metaMethod.typeName();
-        if (typeName=="")
+        m_json = json;
+        QString method = json["method"].toString();
+//        QString svrName = method.section(".", 0, 0);
+//        method = method.section(".", 1);
+        //get signature
+        QStringList paramTypes;
+        foreach(const QVariant &v, json["params"].toList())
         {
-            typeName = "void";
+            paramTypes.append(v.typeName());
         }
-#if QT_VERSION >= 0x050000
-        QByteArray signature = method.methodSignature();
-        QByteArray methodName = method.name();
-#else
-        QByteArray signature = metaMethod.signature();
-        QByteArray methodName = signature.left(signature.indexOf('('));
-#endif
-        //qDebug()<<methodName<< typeName<< metaMethod.signature();
-        if (methodName==method)
-        {
-            QVarLengthArray<void *, 10> parameters;
-            QVariant returnValue(QMetaType::Int, nullptr);
-            parameters.append(returnValue.data());
-            QVariantList arguments = json["params"].toList();
-            foreach(const QVariant &v, arguments)
-            {
-                parameters.append(const_cast<void *>(v.constData()));
-            }
-            object->qt_metacall(QMetaObject::InvokeMetaMethod,
-                                i, parameters.data());
-            qDebug()<<"ReturnValue="<<returnValue;
-        }
-
+        m_signature = method + "(" + paramTypes.join(",") + ")";
+        m_id = json["id"].toInt();
     }
-}
 
-void remoteCall(const QString &method, const QVariant &v1=QVariant(), const QVariant &v2=QVariant(), const QVariant &v3=QVariant(), const QVariant &v4=QVariant())
+    QVariant invoke(QObject* object)
+    {
+        const QMetaObject *metaObject = object->metaObject();
+        for(int i=metaObject->methodOffset();  i<metaObject->methodCount(); i++)
+        {
+            QMetaMethod metaMethod = metaObject->method(i);
+            QString signature = metaMethod.signature();
+
+            if (signature==m_signature)
+            {
+                QVarLengthArray<void *, 10> parameters;
+
+                QVariant returnValue(QMetaType::type(metaMethod.typeName()), nullptr);
+                parameters.append(returnValue.data());
+                QVariantList arguments = m_json["params"].toList();
+                foreach(const QVariant &v, arguments)
+                {
+                    parameters.append(const_cast<void *>(v.constData()));
+                }
+                object->qt_metacall(QMetaObject::InvokeMetaMethod, i, parameters.data());
+                return returnValue;
+            }
+        }
+        return QVariant();
+    }
+
+private:
+    Json m_json;
+    QString m_signature;
+    int m_id;
+};
+
+
+
+QVariant remoteCall(const QString &method, const QVariant &v1=QVariant(), const QVariant &v2=QVariant(), const QVariant &v3=QVariant(), const QVariant &v4=QVariant())
 {
     Service service;
     Json request;
@@ -121,7 +133,9 @@ void remoteCall(const QString &method, const QVariant &v1=QVariant(), const QVar
         params.append(v4);
     }
     request["params"] = params;
-    call(&service, request);
+
+    Message r(request);
+    return r.invoke(&service);
 }
 
 int main(int argc, char *argv[])
@@ -129,8 +143,15 @@ int main(int argc, char *argv[])
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
     QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
     QCoreApplication a(argc, argv);
-    //remoteCall("S.add", 32, 8);
-    remoteCall("s.print", "Hello World!");
+    {
+        QVariant returnValue = remoteCall("add", 32, 8, 9);
+        qDebug()<<"ReturnValue="<<returnValue;
+    }
+    {
+        QVariant returnValue = remoteCall("print", "Hello World!");
+        qDebug()<<"ReturnValue="<<returnValue;
+    }
+
     //    Service service;
     //    Json j;
     //    j["method"] = "Serverice.add";

@@ -13,6 +13,13 @@ int Service::add(int a, int b)
     return v;
 }
 
+int Service::add(int a, int b, int c)
+{
+    int v = a + b + c;
+    qDebug()<<"call Service(3)::add "<<v;
+    return v;
+}
+
 void Service::print(const QString &message)
 {
     qDebug()<<"Service::print--->"<<message;

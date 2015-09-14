@@ -11,6 +11,7 @@ public:
 
 private slots:
     int add(int a, int b);
+    int add(int a, int b, int c);
     void print(const QString &message);
 };
 
