@@ -19,4 +19,7 @@ SOURCES += main.cpp \
     service.cpp
 
 HEADERS += \
-    service.h
+    service.h \
+    jsonrpc/message.h \
+    jsonrpc/result.h \
+    jsonrpc/serviceprovider.h
