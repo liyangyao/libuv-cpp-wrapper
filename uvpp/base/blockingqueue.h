@@ -9,7 +9,7 @@ Date: 2015/6/29
 #define UVPP_BLOCKINGQUEUE_H
 
 #include <deque>
-#include "uv.h"
+#include <libuv/uv.h>
 
 template<typename T>
 class BlockingQueue

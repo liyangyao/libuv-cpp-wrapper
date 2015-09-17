@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
     QCoreApplication a(argc, argv);
     {
-        remoteCall("add", 32, 16);
+        remoteCall("addx", 32, 16);
     }
 //    {
 //        remoteCall("print", "Helo");

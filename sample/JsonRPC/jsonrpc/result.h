@@ -58,31 +58,31 @@ public:
     void setParseError()
     {
         m_errorCode = ParseError;
-        m_errorMessage = QLatin1String("Invalid JSON was received by the server.");
+        m_errorMessage = QLatin1String("Parse error");
     }
 
     void setInvalidRequest()
     {
         m_errorCode = InvalidRequest;
-        m_errorMessage = QLatin1String("The JSON sent is not a valid Request object.");
+        m_errorMessage = QLatin1String("Invalid Request");
     }
 
     void setMethodNotFound()
     {
         m_errorCode = MethodNotFound;
-        m_errorMessage = QLatin1String("The method does not exist / is not available.");
+        m_errorMessage = QLatin1String("Method not found");
     }
 
     void setInvalidParams()
     {
         m_errorCode = InvalidParams;
-        m_errorMessage = QLatin1String("Invalid method parameter(s).");
+        m_errorMessage = QLatin1String("Invalid params");
     }
 
     void setInternalError()
     {
         m_errorCode = InternalError;
-        m_errorMessage = QLatin1String("Internal JSON-RPC error.");
+        m_errorMessage = QLatin1String("Internal error");
     }
 
     void setReturnValue(const QVariant &value)
