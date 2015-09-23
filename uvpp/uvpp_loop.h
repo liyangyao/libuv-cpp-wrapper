@@ -19,6 +19,7 @@ public:
     {
         uv_loop_init(&m_uvloop);
         m_uvloop.data = this;
+        buffer.in_use = false;
     }
 
     //Run the event loop.
