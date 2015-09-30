@@ -92,15 +92,13 @@ private:
     static void handle_close_cb(uv_handle_t* handle)
     {
         HANDLE_T* _handle = reinterpret_cast<HANDLE_T *>(handle);
-        if (_handle->data)
+        if (_handle->data)//Handle alive
         {
             Handle* _this = (Handle *)_handle->data;
-            Callback cb = _this->m_closeCallback;
-            handle->data = nullptr;
-            _this->m_closeCallback = nullptr;
-            if (cb)
+            handle->data = nullptr;//set closed
+            if (_this->m_closeCallback)
             {
-                cb();
+                _this->m_closeCallback();
             }
         }
         else{

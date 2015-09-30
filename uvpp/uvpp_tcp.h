@@ -11,16 +11,19 @@ namespace uv{
 class Tcp: public Stream<uv_tcp_t>
 {
 public:
+    static int TcpCount;
     explicit Tcp(Loop *loop):
         Stream<uv_tcp_t>()
     {
-        //qDebug()<<"Tcp constructor("<<this<<")";
+        TcpCount++;
+        qDebug()<<"Tcp create("<<this<<")"<<TcpCount;
         uv_tcp_init(loop->handle(), handle());
     }
 
     ~Tcp()
     {
-        //qDebug()<<"~Tcp destructor("<<this<<")";
+        TcpCount--;
+        qDebug()<<"~Tcp destructor("<<this<<")"<<TcpCount;
     }
 
     //Bind to the specified IP and port.
@@ -92,6 +95,7 @@ private:
         delete ctx;
     }
 };
+int Tcp::TcpCount = 0;
 }
 
 #endif // UVPP_TCP_H

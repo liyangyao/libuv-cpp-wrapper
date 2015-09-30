@@ -19,37 +19,6 @@
 
 #pragma comment(lib, "Dbghelp.lib")
 
-LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS* ExceptionInfo)
-{
-    wchar_t szProgramPath[MAX_PATH] = {0};
-    if(GetModuleFileName(NULL, szProgramPath, MAX_PATH))
-    {
-           LPTSTR lpSlash = wcsrchr(szProgramPath, '\\');
-           if(lpSlash)
-           {
-               *(lpSlash + 1) = '\0';
-           }
-    }
-    wchar_t szDumpFile[MAX_PATH] = {0};
-    swprintf_s(szDumpFile, MAX_PATH, L"%s%d.dmp", szProgramPath, time(NULL));
-
-    HANDLE lhDumpFile = CreateFile(szDumpFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL ,NULL);
-    MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;
-    loExceptionInfo.ExceptionPointers = ExceptionInfo;
-    loExceptionInfo.ThreadId = GetCurrentThreadId();
-    loExceptionInfo.ClientPointers = true;
-
-    MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), lhDumpFile, MiniDumpWithIndirectlyReferencedMemory, &loExceptionInfo, NULL, NULL);
-    CloseHandle(lhDumpFile);
-
-    return EXCEPTION_EXECUTE_HANDLER;
-}
-
-void InstallDump()
-{
-    SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
-}
-
 class Buffer
 {
 public:
@@ -82,27 +51,27 @@ private:
     int m_pos;
 };
 
+
 int gSessionCount = 0;
 class Session:public std::enable_shared_from_this<Session>
 {
-public:    
-    Session(const uv::ConnectionPtr &conn, const QByteArray& data):
+public:
+    Session(const uv::TcpPtr &conn, uv::Loop* loop, const QByteArray& data):
         m_local(conn),
-        m_tcp(conn->loop()),
+        m_tcp(loop),
         m_remoteConnected(false)
     {
         gSessionCount++;
         qDebug()<<"Session Constructor("<<this<<")"<<"("<<m_local.get()<<")";
-        localMessage(data);
-        conn->messageCallback = std::bind(&Session::localMessage, this, std::placeholders::_2);
-
+        localMessage(data.constData(), data.size());
+        conn->onData(std::bind(&Session::localMessage, this, std::placeholders::_1, std::placeholders::_2));
     }
 
     void init()
     {
         m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, shared_from_this(), std::placeholders::_1));
         m_tcp.onData(std::bind(&Session::remoteMessage, this, std::placeholders::_1, std::placeholders::_2));
-        m_tcp.onClose(std::bind(&Session::onRemoteClosed, this));
+        m_tcp.onEnd(std::bind(&Session::onRemoteClosed, this));
     }
 
     ~Session()
@@ -114,12 +83,13 @@ public:
 private:
     uv::Tcp m_tcp;
     QByteArray m_dataToWrite;
-    uv::ConnectionPtr m_local;
+    uv::TcpPtr m_local;
     Botan::Encryptor m_encryptor;
     bool m_remoteConnected;
 
-    void localMessage(const QByteArray &data)
+    void localMessage(const char* d, int size)
     {
+        QByteArray data = QByteArray::fromRawData(d, size);
         if (data.isEmpty()) return;
         //qDebug()<<"localMessage size="<<data.length();
         QByteArray output = m_encryptor.encrypt(data);
@@ -170,23 +140,27 @@ private:
         m_local->shutdown();
     }
 };
+typedef std::shared_ptr<Session> SessionPtr;
+Q_DECLARE_METATYPE(SessionPtr);
 
 class AuthSession:public std::enable_shared_from_this<AuthSession>
 {
 public:
-    AuthSession(const uv::ConnectionPtr &conn):
+    AuthSession(const uv::TcpPtr &conn,uv::Loop* loop, QVariant* context):
         m_status(0),
         m_urlLen(0),
-        m_local(conn)
+        m_local(conn),
+        m_context(context),
+        m_loop(loop)
     {
-        qDebug()<<"AuthSession Destructor("<<this<<")("<<m_local.get()<<")";
+        qDebug()<<"AuthSession create("<<this<<")("<<m_local.get()<<")";
         m_buffer.reset(new Buffer(&m_recved));
-        conn->messageCallback = std::bind(&AuthSession::localMessage, this, std::placeholders::_1, std::placeholders::_2);
+        conn->onData(std::bind(&AuthSession::localMessage, this, std::placeholders::_1, std::placeholders::_2));
     }
 
     ~AuthSession()
     {
-        qDebug()<<"AuthSession Destructor("<<this<<")("<<m_local.get()<<")";
+        qDebug()<<"AuthSession destroy("<<this<<")("<<m_local.get()<<")";
     }
 
 private:
@@ -195,9 +169,12 @@ private:
     std::unique_ptr<Buffer> m_buffer;
     int m_addrType;
     int m_urlLen;
-    uv::ConnectionPtr m_local;
-    void localMessage(const uv::ConnectionPtr &conn, const QByteArray &data)
+    uv::TcpPtr m_local;
+    QVariant* m_context;
+    uv::Loop* m_loop;
+    void localMessage(const char *d, int size)
     {
+        QByteArray data = QByteArray::fromRawData(d, size);
         if (m_status==0)
         {
             QString hex = data.toHex();
@@ -210,7 +187,7 @@ private:
             //proxy从METHODS字段中选中一个字节(一种认证机制)，并向Client发送响应报文:
             //一般是 hex: 05 00 即：版本5，无需认证
             static QByteArray respon = QByteArray::fromHex("0500");
-            conn->write(respon);
+            m_local->write(respon);
         }
         else if (m_status==1)
         {
@@ -231,23 +208,37 @@ private:
             {
                 return;
             }
-            std::shared_ptr<AuthSession> guard(shared_from_this());
-            QString aurl = m_buffer->read(m_urlLen);
-
-
             m_status = 2;
+
+
+
+
+//std::shared_ptr<AuthSession> guard(shared_from_this());
+
+
 
             static const char res [] = { 5, 0, 0, 1, 0, 0, 0, 0, 16, 16 };
             static const QByteArray response(res, 10);
-            conn->write(response);
+            m_local->write(response);
 
-            std::shared_ptr<Session> session(new Session(conn, m_recved.right(m_recved.length()-3)));
+            QString url = QString::fromUtf8(m_buffer->read(m_urlLen));
+
+            SessionPtr session(new Session(m_local, m_loop, m_recved.right(m_recved.length()-3)));
             session->init();
-            conn->context = session;
-            qDebug()<<"Session("<<session.get()<<")--->"<<aurl;
+            qDebug()<<"switch";
+            m_context->setValue(session);
+
+            qDebug()<<"Session("<<session.get()<<")--->"<<url;
+
+
+
+
+
         }
     }
 };
+typedef std::shared_ptr<AuthSession> AuthSessionPtr;
+Q_DECLARE_METATYPE(AuthSessionPtr);
 
 
 void runThread()
@@ -256,10 +247,10 @@ void runThread()
     {
         uv::Loop loop;
         uv::TcpServer server(&loop);
-        server.onNewConnection = [](const uv::ConnectionPtr &conn)
+        server.onConnection = [&loop](const uv::TcpPtr &conn, QVariant *context)
         {
-            std::shared_ptr<AuthSession> authSession(new AuthSession(conn));
-            conn->context = authSession;
+           AuthSessionPtr authSession(new AuthSession(conn, &loop, context));
+           context->setValue(authSession);
         };
 
         qDebug()<<"listen:"<< server.listen("0.0.0.0", 1081);
@@ -308,8 +299,6 @@ void test()
 
 int main(int argc, char *argv[])
 {
-    InstallDump();    
-
     Utility::installMsgHandler(true, true);
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
     QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));

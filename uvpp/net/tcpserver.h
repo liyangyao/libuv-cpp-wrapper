@@ -10,18 +10,22 @@ Date: 2015/8/18
 
 #include <vector>
 #include <unordered_map>
-#include <uvpp/uvpp_idle.h>
-#include <uvpp/net/connection.h>
+#include <uvpp/uvpp.h>
+
 
 
 namespace uv{
 
+typedef std::shared_ptr<Tcp> TcpPtr;
+typedef QVariant Context;
+typedef std::function<void(const TcpPtr &, QVariant *context)> CallbackWithTcp;
 class TcpServer
 {
 public:
     explicit TcpServer(Loop* loop):
         m_loop(loop),
-        m_tcpServer(loop)
+        m_tcpServer(loop),
+        m_lastClientId(0)
     {
 
     }
@@ -33,42 +37,33 @@ public:
         return m_tcpServer.listen();
     }
 
-    Connection::NewConnectionCallback onNewConnection;
-    Connection::CloseCallback onConnectionClose;
-    Connection::MessageCallback onMessage;
+    CallbackWithTcp onConnection;
 private:
     Loop* m_loop;
     Tcp m_tcpServer;
-
-    std::unordered_map<int, ConnectionPtr> m_connections;
-
+    int m_lastClientId;
+    std::unordered_map<int, TcpPtr> m_clients;
     void handleNewConnection()
     {
-        std::unique_ptr<Tcp> tcp(new Tcp(m_loop));
-        m_tcpServer.accept(tcp.get());
-        ConnectionPtr connection = std::make_shared<Connection>(tcp);
-        connection->closeCallback = std::bind(&TcpServer::hanleConnectionClose, this, std::placeholders::_1);
-        connection->messageCallback = onMessage;
-        connection->connectionEstablished();
-        m_connections.insert(std::make_pair(connection->id(), connection));
-        if (onNewConnection)
+        int clientId = m_lastClientId++;
+        TcpPtr tcp(new Tcp(m_loop));
+        m_tcpServer.accept(tcp.get());        
+        tcp->read_start();
+        Context* context = new QVariant;
+        if (onConnection)
         {
-            onNewConnection(connection);
+            onConnection(tcp, context);
         }
+
+        tcp->onClose([this, clientId, context]
+        {
+            m_clients.erase(clientId);
+            delete context;
+        });
+
+        m_clients.insert(std::pair<int, TcpPtr>(clientId, tcp));
     }
 
-    void hanleConnectionClose(const ConnectionPtr &connection)
-    {
-
-        qDebug()<<"hanleConnectionClose #1";
-        if (onConnectionClose)
-        {
-            onConnectionClose(connection);
-        }
-        connection->connectionDestroyed();
-        m_connections.erase(connection->id());
-        qDebug()<<"hanleConnectionClose #2";
-    }
     DISABLE_COPY(TcpServer)
 };
 }

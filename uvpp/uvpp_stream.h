@@ -151,6 +151,7 @@ private:
             {
                 _this->m_endCallback();
             }
+            _this->close();
         }
         Loop* loop = (Loop *)stream->loop->data;
         loop->buffer.in_use = false;
