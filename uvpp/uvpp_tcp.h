@@ -6,7 +6,7 @@
 #include "uvpp_loop.h"
 #include "uvpp_stream.h"
 
-namespace uvpp{
+namespace uv{
 
 class Tcp: public Stream<uv_tcp_t>
 {
@@ -45,16 +45,16 @@ public:
     struct tcp_connect_ctx
     {
         uv_connect_t req;
-        ConnectCallback callback;
+        CallbackWithResult callback;
     };
 
     //Start connecion to remote endpoint.
-    bool connect(const char *ip, int port, const ConnectCallback &onConnect)
+    bool connect(const char *ip, int port, const CallbackWithResult &connectCallback)
     {
         struct sockaddr_in addr;
         uv_ip4_addr(ip, port, &addr);
         tcp_connect_ctx *ctx = new tcp_connect_ctx;
-        ctx->callback = onConnect;
+        ctx->callback = connectCallback;
 
         int err = uv_tcp_connect(&ctx->req, handle(),
                               reinterpret_cast<const struct sockaddr *>(&addr),
@@ -87,7 +87,7 @@ private:
         tcp_connect_ctx *ctx = UV_CONTAINER_OF(req, tcp_connect_ctx, req);
         if (ctx->callback)
         {
-            ctx->callback(status==0);
+            ctx->callback(status);
         }
         delete ctx;
     }

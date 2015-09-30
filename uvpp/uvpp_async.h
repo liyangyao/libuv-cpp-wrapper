@@ -4,12 +4,12 @@
 #include "uvpp_define.h"
 #include "uvpp_handle.h"
 
-namespace uvpp{
+namespace uv{
 
 class Async: public Handle<uv_async_t>
 {
 public:
-    explicit Async(Loop* loop,const Functor& functor):
+    explicit Async(Loop* loop,const Callback& functor):
         Handle<uv_async_t>(),
         m_functor(functor)
     {
@@ -22,7 +22,7 @@ public:
     }
 
 private:
-    Functor m_functor;
+    Callback m_functor;
     static void async_cb(uv_async_t* handle)
     {
         Async* _this = (Async *)handle->data;

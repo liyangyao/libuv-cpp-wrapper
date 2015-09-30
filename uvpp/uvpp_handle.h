@@ -10,7 +10,7 @@ Date: 2015/8/17
 
 #include "uvpp_define.h"
 
-namespace uvpp{
+namespace uv{
 template <typename HANDLE_T>
 class Handle
 {
@@ -81,23 +81,23 @@ public:
         uv_close(handle<uv_handle_t>(), handle_close_cb);
     }
 
-    void onClose(const CloseCallback &cb)
+    void onClose(const Callback &closeCallback)
     {
-        m_onClose = cb;
+        m_closeCallback = closeCallback;
     }
 
 private:
     HANDLE_T *m_handle;
-    CloseCallback m_onClose;
+    Callback m_closeCallback;
     static void handle_close_cb(uv_handle_t* handle)
     {
         HANDLE_T* _handle = reinterpret_cast<HANDLE_T *>(handle);
         if (_handle->data)
         {
             Handle* _this = (Handle *)_handle->data;
-            CloseCallback cb = _this->m_onClose;
+            Callback cb = _this->m_closeCallback;
             handle->data = nullptr;
-            _this->m_onClose = nullptr;
+            _this->m_closeCallback = nullptr;
             if (cb)
             {
                 cb();

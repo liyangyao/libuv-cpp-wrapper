@@ -10,7 +10,7 @@ Date: 2015/8/17
 
 #include "uvpp_define.h"
 
-namespace uvpp{
+namespace uv{
 
 class Loop
 {
@@ -55,11 +55,11 @@ public:
     struct loop_work_ctx
     {
         uv_work_t work;
-        WorkCallback work_cb;
-        AfterWorkCallback after_cb;
+        Callback work_cb;
+        CallbackWithResult after_cb;
     };
 
-    void queue_work(const WorkCallback &work_cb, const AfterWorkCallback &after_cb)
+    void queue_work(const Callback &work_cb, const CallbackWithResult &after_cb)
     {
         loop_work_ctx* req = new loop_work_ctx;
         req->work_cb = work_cb;

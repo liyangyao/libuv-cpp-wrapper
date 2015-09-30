@@ -13,7 +13,7 @@ Date: 2015/8/18
 #include <uvpp/uvpp_async.h>
 #include <uvpp/uvpp_thread.h>
 
-namespace uvpp{
+namespace uv{
 
 class AsyncFunctor
 {
@@ -23,7 +23,7 @@ public:
         m_async.reset(new Async(loop, std::bind(&AsyncFunctor::onFunctor, this)));
     }
 
-    void queue(const Functor &functor)
+    void queue(const Callback &functor)
     {
         MutexLocker lock(&m_mutex);
         m_functors.push_back(functor);
@@ -31,14 +31,14 @@ public:
     }
 
 private:
-    std::deque<Functor> m_functors;
+    std::deque<Callback> m_functors;
     std::unique_ptr<Async> m_async;
     Mutex m_mutex;
     void onFunctor()
     {
         while (true)
         {
-            Functor fun = nullptr;
+            Callback fun = nullptr;
             {
                 MutexLocker lock(&m_mutex);
                 if (!m_functors.empty())

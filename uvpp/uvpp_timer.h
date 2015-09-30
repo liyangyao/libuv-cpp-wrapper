@@ -4,7 +4,7 @@
 #include "uvpp_define.h"
 #include "uvpp_handle.h"
 
-namespace uvpp{
+namespace uv{
 class Timer: public Handle<uv_timer_t>
 {
 public:
@@ -15,7 +15,7 @@ public:
     }
 
     //Start the Timer.
-    void start(const TimerCallback& functor, uint64_t timeout, uint64_t repeat)
+    void start(const Callback& functor, uint64_t timeout, uint64_t repeat)
     {
         m_functor = functor;
         uv_timer_start(handle(), timer_cb, timeout, repeat);
@@ -45,7 +45,7 @@ public:
     }
 
 private:
-    TimerCallback m_functor;
+    Callback m_functor;
     static void timer_cb(uv_timer_t* handle)
     {
         Timer* _this = (Timer *)handle->data;

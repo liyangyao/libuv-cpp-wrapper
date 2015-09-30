@@ -14,7 +14,7 @@ Date: 2015/8/18
 #include <uvpp/net/connection.h>
 
 
-namespace uvpp{
+namespace uv{
 
 class TcpServer
 {
@@ -29,7 +29,7 @@ public:
     bool listen(const char *ip, int port)
     {
         m_tcpServer.bind(ip, port);
-        m_tcpServer.onNewConnection(std::bind(&TcpServer::handleNewConnection, this));
+        m_tcpServer.onConnection(std::bind(&TcpServer::handleNewConnection, this));
         return m_tcpServer.listen();
     }
 

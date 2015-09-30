@@ -13,11 +13,13 @@ TEMPLATE = app
 DESTDIR = $$PWD/bin
 
 SOURCES += main.cpp\
-        mainform.cpp
+        mainform.cpp\
+    li_utility.cpp
 
 HEADERS  += mainform.h\
     botan_wrapper.h \
-    Buffer.h
+    Buffer.h\
+    li_utility.h
 
 FORMS    += mainform.ui
 

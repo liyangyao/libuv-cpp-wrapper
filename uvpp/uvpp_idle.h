@@ -12,12 +12,12 @@ Date: 2015/8/18
 #include "uvpp_handle.h"
 #include "uvpp_loop.h"
 
-namespace uvpp{
+namespace uv{
 
 class Idle: public Handle<uv_idle_t>
 {
 public:
-    explicit Idle(Loop* loop, const Functor &functor):
+    explicit Idle(Loop* loop, const Callback &functor):
         Handle<uv_idle_t>(),
         m_functor(functor)
     {
@@ -35,7 +35,7 @@ public:
     }
 
 private:
-    Functor m_functor;
+    Callback m_functor;
     static void idle_cb(uv_idle_t* handle)
     {
         Idle* _this = (Idle *)handle->data;

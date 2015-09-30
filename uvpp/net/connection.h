@@ -12,7 +12,7 @@ Date: 2015/8/18
 #include <QDebug>
 
 class Entry;
-namespace uvpp{
+namespace uv{
 
 class Connection;
 
@@ -76,8 +76,9 @@ public:
     {
         if (m_tcp)
         {
-            m_tcp->onRead(std::bind(&Connection::handleRead, this, std::placeholders::_1));
+            m_tcp->onData(std::bind(&Connection::handleRead, this, std::placeholders::_1, std::placeholders::_2));
             m_tcp->onClose(std::bind(&Connection::handleClose, this));
+            m_tcp->onEnd(std::bind(&Connection::handleEnd, this));
             m_tcp->read_start();
         }
     }
@@ -102,11 +103,17 @@ private:
         }
     }
 
-    void handleRead(const QByteArray &data)
+    void handleEnd()
+    {
+        m_tcp->close();
+    }
+
+    void handleRead(const char *data, int size)
     {
         if (messageCallback)
         {
-            messageCallback(shared_from_this(), data);
+            QByteArray d = QByteArray::fromRawData(data, size);
+            messageCallback(shared_from_this(), d);
         }
     }
 

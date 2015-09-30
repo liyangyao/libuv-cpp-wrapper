@@ -4,7 +4,7 @@
 #include "uvpp_define.h"
 #include "uvpp_handle.h"
 
-namespace uvpp{
+namespace uv{
 
 class Mutex
 {
@@ -109,7 +109,7 @@ private:
 class Thread
 {
 public:
-    explicit Thread(const Functor& functor)
+    explicit Thread(const Callback& functor)
     {
         m_functor = functor;
         uv_thread_create(&m_handle, entry, this);
@@ -122,7 +122,7 @@ public:
 
 private:
     uv_thread_t m_handle;
-    Functor m_functor;
+    Callback m_functor;
     static void entry(void* arg)
     {
         Thread* _this = (Thread *)arg;

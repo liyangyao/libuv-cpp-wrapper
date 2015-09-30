@@ -13,7 +13,7 @@ Date: 2015/8/17
 #include "uvpp_loop.h"
 #include "libuv/queue.h"
 
-namespace uvpp{
+namespace uv{
 
 template <typename HANDLE_T>
 class Stream: public Handle<HANDLE_T>
@@ -53,15 +53,15 @@ public:
     {
         uv_write_t req;
         QByteArray buffer;
-        WriteCallback callback;
+        CallbackWithResult callback;
     };
 
     //Write data on the stream
-    bool write(const QByteArray &data, const WriteCallback &cb = nullptr)
+    bool write(const QByteArray &data, const CallbackWithResult &writeCallback = nullptr)
     {
         stream_write_ctx *ctx = new stream_write_ctx;
         ctx->buffer = data;        
-        ctx->callback = cb;
+        ctx->callback = writeCallback;
         uv_buf_t buf;
         buf = uv_buf_init(ctx->buffer.data(), ctx->buffer.size());
 
@@ -77,14 +77,14 @@ public:
     struct stream_shutdown_ctx
     {
         uv_shutdown_t req;
-        ShutdownCallback callback;
+        Callback callback;
     };
 
     //Shutdown the write side of this Stream.
-    bool shutdown(const ShutdownCallback &cb = nullptr)
+    bool shutdown(const Callback &shutdownCallback = nullptr)
     {
         stream_shutdown_ctx* ctx = new stream_shutdown_ctx;        
-        ctx->callback = cb;
+        ctx->callback = shutdownCallback;
         int err =  uv_shutdown(&ctx->req, handle<uv_stream_t>(), stream_shutdown_cb);
         if (err!=0)
         {
@@ -106,14 +106,19 @@ public:
         return uv_is_writable(handle<uv_stream_t>());
     }   
 
-    void onNewConnection(const NewConnectionCallback &cb)
+    void onConnection(const Callback &connectionCallback)
     {
-        m_onNewConnection = cb;
+        m_connectionCallback = connectionCallback;
     }
 
-    void onRead(const ReadCallback &cb)
+    void onData(const CallbackWithData &dataCallback)
     {
-        m_onRead = cb;
+        m_dataCallback = dataCallback;
+    }
+
+    void onEnd(const Callback &endCallback)
+    {
+        m_endCallback = endCallback;
     }
 
 private:
@@ -122,9 +127,9 @@ private:
     {
         if (!server->data) return;
         Stream *_this = reinterpret_cast<Stream *>(server->data);
-        if (_this->m_onNewConnection)
+        if (_this->m_connectionCallback)
         {
-            _this->m_onNewConnection();
+            _this->m_connectionCallback();
         }
     }
 
@@ -135,15 +140,17 @@ private:
         Stream *_this = reinterpret_cast<Stream *>(stream->data);
         if (nread>0)
         {
-            QByteArray ba(buf->base, nread);
-            if (_this->m_onRead)
+            if (_this->m_dataCallback)
             {
-                _this->m_onRead(ba);
+                _this->m_dataCallback(buf->base, nread);
             }
         }
         else if (nread<0)
         {
-            _this->close();
+            if (_this->m_endCallback)
+            {
+                _this->m_endCallback();
+            }
         }
         Loop* loop = (Loop *)stream->loop->data;
         loop->buffer.in_use = false;
@@ -187,8 +194,9 @@ private:
         delete ctx;
     }
 
-    NewConnectionCallback m_onNewConnection;
-    ReadCallback m_onRead;
+    Callback m_connectionCallback;
+    Callback m_endCallback;
+    CallbackWithData m_dataCallback;
 };
 }
 

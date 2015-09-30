@@ -13,7 +13,7 @@ Date: 2015/8/18
 #include "uvpp_loop.h"
 #include "uvpp_stream.h"
 
-namespace uvpp{
+namespace uv{
 
 class Pipe: public Stream<uv_pipe_t>
 {
@@ -37,7 +37,7 @@ public:
 
 
     //Start connecion to the remote Pipe.
-    bool connect(const char *name, const ConnectCallback &onConnect)
+    bool connect(const char *name, const CallbackWithResult &onConnect)
     {
         m_onConnect = onConnect;
         uv_connect_t *req = new uv_connect_t;
@@ -60,7 +60,7 @@ private:
         }
         delete req;
     }
-    ConnectCallback m_onConnect;
+    CallbackWithResult m_onConnect;
 };
 }
 

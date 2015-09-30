@@ -12,6 +12,8 @@
 #include <Windows.h>
 #include "botan_wrapper.h"
 #include <uvpp/net/tcpserver.h>
+#include <QDebug>
+#include "li_utility.h"
 
 #pragma execution_character_set("utf-8")
 
@@ -84,7 +86,7 @@ int gSessionCount = 0;
 class Session:public std::enable_shared_from_this<Session>
 {
 public:    
-    Session(const uvpp::ConnectionPtr &conn, const QByteArray& data):
+    Session(const uv::ConnectionPtr &conn, const QByteArray& data):
         m_local(conn),
         m_tcp(conn->loop()),
         m_remoteConnected(false)
@@ -99,7 +101,7 @@ public:
     void init()
     {
         m_tcp.connect("45.62.109.185", 443, std::bind(&Session::remoteConnected, this, shared_from_this(), std::placeholders::_1));
-        m_tcp.onRead(std::bind(&Session::remoteMessage, this, std::placeholders::_1));
+        m_tcp.onData(std::bind(&Session::remoteMessage, this, std::placeholders::_1, std::placeholders::_2));
         m_tcp.onClose(std::bind(&Session::onRemoteClosed, this));
     }
 
@@ -110,9 +112,9 @@ public:
     }
 
 private:
-    uvpp::Tcp m_tcp;
+    uv::Tcp m_tcp;
     QByteArray m_dataToWrite;
-    uvpp::ConnectionPtr m_local;
+    uv::ConnectionPtr m_local;
     Botan::Encryptor m_encryptor;
     bool m_remoteConnected;
 
@@ -131,7 +133,7 @@ private:
         }
     }
 
-    void remoteConnected(const std::weak_ptr<Session> &ref, bool connected)
+    void remoteConnected(const std::weak_ptr<Session> &ref, int status)
     {
 
         if (ref.expired())
@@ -139,7 +141,7 @@ private:
             qDebug()<<"--------------------------Session expired----------------------------";
             return;
         }
-        if (connected)
+        if (status==0)
         {
             qDebug()<<"Session remote connected("<<this<<")"<<"("<<m_local.get()<<")";
             m_remoteConnected = true;
@@ -152,9 +154,10 @@ private:
         }
     }
 
-    void remoteMessage(const QByteArray &data)
+    void remoteMessage(const char *data, int size)
     {
-        QByteArray output = m_encryptor.decrypt(data);
+        QByteArray ba = QByteArray::fromRawData(data, size);
+        QByteArray output = m_encryptor.decrypt(ba);
         //qDebug()<<"remoteMessage size="<<data.size()<<" outputsize="<<output.size();
         //qDebug()<<output;
         m_local->write(output);
@@ -171,7 +174,7 @@ private:
 class AuthSession:public std::enable_shared_from_this<AuthSession>
 {
 public:
-    AuthSession(const uvpp::ConnectionPtr &conn):
+    AuthSession(const uv::ConnectionPtr &conn):
         m_status(0),
         m_urlLen(0),
         m_local(conn)
@@ -192,8 +195,8 @@ private:
     std::unique_ptr<Buffer> m_buffer;
     int m_addrType;
     int m_urlLen;
-    uvpp::ConnectionPtr m_local;
-    void localMessage(const uvpp::ConnectionPtr &conn, const QByteArray &data)
+    uv::ConnectionPtr m_local;
+    void localMessage(const uv::ConnectionPtr &conn, const QByteArray &data)
     {
         if (m_status==0)
         {
@@ -249,11 +252,11 @@ private:
 
 void runThread()
 {
-    uvpp::Thread* thread = new uvpp::Thread([&thread]()
+    uv::Thread* thread = new uv::Thread([&thread]()
     {
-        uvpp::Loop loop;
-        uvpp::TcpServer server(&loop);
-        server.onNewConnection = [](const uvpp::ConnectionPtr &conn)
+        uv::Loop loop;
+        uv::TcpServer server(&loop);
+        server.onNewConnection = [](const uv::ConnectionPtr &conn)
         {
             std::shared_ptr<AuthSession> authSession(new AuthSession(conn));
             conn->context = authSession;
@@ -270,22 +273,33 @@ void runThread()
 
 void test()
 {
-    uvpp::Thread* thread = new uvpp::Thread([&thread]()
+    uv::Thread* thread = new uv::Thread([&thread]()
     {
-        uvpp::Loop loop;
+        uv::Loop loop;
 
-        {
-            uvpp::Tcp tcp(&loop);
-            tcp.connect("111.13.100.91", 80, [](bool connected)
+
+            uv::Tcp tcp(&loop);
+            uv::Timer timer(&loop);
+            tcp.connect("111.13.100.91", 80, [&](int status)
             {
-                qDebug()<<"Connected www.baidu.com";
-            });
-        }
-        uvpp::Timer timer(&loop);
-        timer.start([]()
-        {
+                qDebug()<<"Connected www.baidu.com status="<<status;
 
-        }, 1000, 1000);
+
+                timer.start([&]()
+                {
+                    qDebug()<<"begin Call shutdown";
+                    tcp.shutdown([]
+                    {
+                        qDebug()<<"shutdown now";
+                    });
+                }, 1000, 0);
+            });
+            tcp.onEnd([]()
+            {
+                qDebug()<<"onEnd";
+            });
+
+
         loop.run();
 
     });
@@ -295,6 +309,8 @@ void test()
 int main(int argc, char *argv[])
 {
     InstallDump();    
+
+    Utility::installMsgHandler(true, true);
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("utf8"));
     QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
     QApplication a(argc, argv);
