@@ -13,18 +13,59 @@ Date: 2015/8/18
 
 namespace uv{
 
-typedef QVariant Context;
+
+class TcpConnection
+{
+public:
+    TcpConnection(Loop* loop):
+        m_loop(loop),
+        m_tcp(loop)
+    {
+        m_count++;
+        qDebug()<<"TcpConnection count="<<m_count;
+    }
+
+    ~TcpConnection()
+    {
+        m_count--;
+        qDebug()<<"~TcpConnection count="<<m_count;
+    }
+
+    void setContext(const std::shared_ptr<void> &context)
+    {
+        m_context = context;
+    }
+
+
+
+    Tcp* tcp()
+    {
+        return &m_tcp;
+    }
+
+    Loop* loop()
+    {
+        return m_loop;
+    }
+
+private:
+    std::shared_ptr<void> m_context;
+    Tcp m_tcp;
+    Loop* m_loop;
+    static int m_count;
+    friend class TcpServer;
+};
+int TcpConnection::m_count = 0;
+typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
+
 
 class TcpServer
 {
 public:
-    typedef Tcp Client;
-    typedef std::shared_ptr<Client> ClientPtr;
-    typedef std::function<void(const ClientPtr &, QVariant *context)> CallbackNewConnection;
+    typedef std::function<void(const TcpConnectionPtr &)> CallbackNewConnection;
     explicit TcpServer(Loop* loop):
         m_loop(loop),
-        m_server(loop),
-        m_lastClientId(0)
+        m_server(loop)
     {
 
     }
@@ -39,28 +80,26 @@ public:
     CallbackNewConnection onConnection;
 private:
     Loop* m_loop;
-    Client m_server;
-    int m_lastClientId;
-    std::unordered_map<int, ClientPtr> m_clients;
+    Tcp m_server;
+
+
     void handleNewConnection()
     {
-        int clientId = m_lastClientId++;
-        ClientPtr client(new Client(m_loop));
-        m_server.accept(client.get());
-        client->read_start();
-        Context* context = new QVariant;
+        TcpConnectionPtr conn(new TcpConnection(m_loop));
+        m_server.accept(conn->tcp());
+        conn->tcp()->read_start();
+
         if (onConnection)
         {
-            onConnection(client, context);
+            onConnection(conn);
         }
 
-        client->onClose([this, clientId, context]
+        conn->tcp()->onClose([conn]
         {
-            m_clients.erase(clientId);
-            delete context;
+            conn->setContext(nullptr);
+            conn->tcp()->onClose(nullptr);
+            qDebug()<<"onClose usercount="<< conn.use_count();
         });
-
-        m_clients.insert(std::pair<int, ClientPtr>(clientId, client));
     }
     DISABLE_COPY(TcpServer)
 };

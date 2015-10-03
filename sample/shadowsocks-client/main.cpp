@@ -56,15 +56,15 @@ int gSessionCount = 0;
 class Session:public std::enable_shared_from_this<Session>
 {
 public:
-    Session(const uv::TcpPtr &conn, uv::Loop* loop, const QByteArray& data):
+    Session(const uv::TcpConnectionPtr &conn, const QByteArray& data):
         m_local(conn),
-        m_tcp(loop),
+        m_tcp(conn->loop()),
         m_remoteConnected(false)
     {
         gSessionCount++;
         qDebug()<<"Session Constructor("<<this<<")"<<"("<<m_local.get()<<")";
         localMessage(data.constData(), data.size());
-        conn->onData(std::bind(&Session::localMessage, this, std::placeholders::_1, std::placeholders::_2));
+        conn->tcp()->onData(std::bind(&Session::localMessage, this, std::placeholders::_1, std::placeholders::_2));
     }
 
     void init()
@@ -83,7 +83,7 @@ public:
 private:
     uv::Tcp m_tcp;
     QByteArray m_dataToWrite;
-    uv::TcpPtr m_local;
+    uv::TcpConnectionPtr m_local;
     Botan::Encryptor m_encryptor;
     bool m_remoteConnected;
 
@@ -130,14 +130,14 @@ private:
         QByteArray output = m_encryptor.decrypt(ba);
         //qDebug()<<"remoteMessage size="<<data.size()<<" outputsize="<<output.size();
         //qDebug()<<output;
-        m_local->write(output);
+        m_local->tcp()->write(output);
 
     }
 
     void onRemoteClosed()
     {
         qDebug()<<"Session onRemoteClosed("<<this<<")"<<"("<<m_local.get()<<")";
-        m_local->shutdown();
+        m_local->tcp()->shutdown();
     }
 };
 typedef std::shared_ptr<Session> SessionPtr;
@@ -146,16 +146,14 @@ Q_DECLARE_METATYPE(SessionPtr);
 class AuthSession:public std::enable_shared_from_this<AuthSession>
 {
 public:
-    AuthSession(const uv::TcpPtr &conn,uv::Loop* loop, QVariant* context):
+    AuthSession(const uv::TcpConnectionPtr &conn):
         m_status(0),
         m_urlLen(0),
-        m_local(conn),
-        m_context(context),
-        m_loop(loop)
+        m_local(conn)
     {
         qDebug()<<"AuthSession create("<<this<<")("<<m_local.get()<<")";
         m_buffer.reset(new Buffer(&m_recved));
-        conn->onData(std::bind(&AuthSession::localMessage, this, std::placeholders::_1, std::placeholders::_2));
+        conn->tcp()->onData(std::bind(&AuthSession::localMessage, this, std::placeholders::_1, std::placeholders::_2));
     }
 
     ~AuthSession()
@@ -169,9 +167,8 @@ private:
     std::unique_ptr<Buffer> m_buffer;
     int m_addrType;
     int m_urlLen;
-    uv::TcpPtr m_local;
-    QVariant* m_context;
-    uv::Loop* m_loop;
+    uv::TcpConnectionPtr m_local;
+
     void localMessage(const char *d, int size)
     {
         QByteArray data = QByteArray::fromRawData(d, size);
@@ -187,7 +184,7 @@ private:
             //proxy从METHODS字段中选中一个字节(一种认证机制)，并向Client发送响应报文:
             //一般是 hex: 05 00 即：版本5，无需认证
             static QByteArray respon = QByteArray::fromHex("0500");
-            m_local->write(respon);
+            m_local->tcp()->write(respon);
         }
         else if (m_status==1)
         {
@@ -219,14 +216,14 @@ private:
 
             static const char res [] = { 5, 0, 0, 1, 0, 0, 0, 0, 16, 16 };
             static const QByteArray response(res, 10);
-            m_local->write(response);
+            m_local->tcp()->write(response);
 
             QString url = QString::fromUtf8(m_buffer->read(m_urlLen));
 
-            SessionPtr session(new Session(m_local, m_loop, m_recved.right(m_recved.length()-3)));
+            SessionPtr session(new Session(m_local, m_recved.right(m_recved.length()-3)));
             session->init();
             qDebug()<<"switch";
-            m_context->setValue(session);
+            m_local->setContext(session);
 
             qDebug()<<"Session("<<session.get()<<")--->"<<url;
 
@@ -247,10 +244,10 @@ void runThread()
     {
         uv::Loop loop;
         uv::TcpServer server(&loop);
-        server.onConnection = [&loop](const uv::TcpPtr &conn, QVariant *context)
+        server.onConnection = [&loop](const uv::TcpConnectionPtr &conn)
         {
-           AuthSessionPtr authSession(new AuthSession(conn, &loop, context));
-           context->setValue(authSession);
+           AuthSessionPtr authSession(new AuthSession(conn));
+           conn->setContext(authSession);
         };
 
         qDebug()<<"listen:"<< server.listen("0.0.0.0", 1081);
