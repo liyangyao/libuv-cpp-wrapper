@@ -12,6 +12,7 @@ Date: 2015/8/17
 #include <functional>
 #include <QObject>
 #include <libuv/uv.h>
+#include <QDebug>
 
 namespace uv{
 

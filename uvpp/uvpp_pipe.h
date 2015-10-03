@@ -30,9 +30,9 @@ public:
     }
 
     //Bind to the specified Pipe name.
-    int bind(const char *name)
+    bool bind(const char *name)
     {
-        return uv_pipe_bind(handle(), name);
+        return uv_pipe_bind(handle(), name)==0;
     }
 
 
@@ -53,10 +53,10 @@ private:
     static void pipe_connect_cb(uv_connect_t* req, int status)
     {
         bool connected = status==0;
-        Pipe *_this = reinterpret_cast<Pipe *>(req->data);
-        if (_this->m_onConnect)
+        Pipe *self = reinterpret_cast<Pipe *>(req->data);
+        if (self->m_onConnect)
         {
-            _this->m_onConnect(connected);
+            self->m_onConnect(connected);
         }
         delete req;
     }
