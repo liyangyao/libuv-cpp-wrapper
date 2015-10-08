@@ -210,7 +210,7 @@ private:
 
 
 
-//std::shared_ptr<AuthSession> guard(shared_from_this());
+            //std::shared_ptr<AuthSession> guard(shared_from_this());
 
 
 
@@ -241,8 +241,8 @@ void runThread()
         uv::TcpServer server(&loop);
         server.onConnection = [&loop](const uv::TcpConnectionPtr &conn)
         {
-           AuthSessionPtr authSession(new AuthSession(conn));
-           conn->setContext(authSession);
+            AuthSessionPtr authSession(new AuthSession(conn));
+            conn->setContext(authSession);
         };
 
         qDebug()<<"listen:"<< server.listen("0.0.0.0", 1081);
@@ -261,26 +261,26 @@ void test()
         uv::Loop loop;
 
 
-            uv::Tcp tcp(&loop);
-            uv::Timer timer(&loop);
-            tcp.connect("111.13.100.91", 80, [&](int status)
+        uv::Tcp tcp(&loop);
+        uv::Timer timer(&loop);
+        tcp.connect("111.13.100.91", 80, [&](int status)
+        {
+            qDebug()<<"Connected www.baidu.com status="<<status;
+
+
+            timer.start([&]()
             {
-                qDebug()<<"Connected www.baidu.com status="<<status;
-
-
-                timer.start([&]()
+                qDebug()<<"begin Call shutdown";
+                tcp.shutdown([]
                 {
-                    qDebug()<<"begin Call shutdown";
-                    tcp.shutdown([]
-                    {
-                        qDebug()<<"shutdown now";
-                    });
-                }, 1000, 0);
-            });
-            tcp.onEnd([]()
-            {
-                qDebug()<<"onEnd";
-            });
+                    qDebug()<<"shutdown now";
+                });
+            }, 1000, 0);
+        });
+        tcp.onEnd([]()
+        {
+            qDebug()<<"onEnd";
+        });
 
 
         loop.run();

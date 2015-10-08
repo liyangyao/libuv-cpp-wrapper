@@ -8,8 +8,7 @@ Date: 2015/8/18
 #ifndef UVPP_TCPSERVER_H
 #define UVPP_TCPSERVER_H
 
-#include <unordered_map>
-#include <uvpp/uvpp.h>
+#include <uvpp/uvpp_tcp.h>
 
 namespace uv{
 
@@ -21,14 +20,12 @@ public:
         m_loop(loop),
         m_tcp(loop)
     {
-        m_count++;
-        qDebug()<<"TcpConnection count="<<m_count;
+
     }
 
     ~TcpConnection()
     {
-        m_count--;
-        qDebug()<<"~TcpConnection count="<<m_count;
+
     }
 
     void setContext(const std::shared_ptr<void> &context)
@@ -50,10 +47,7 @@ private:
     std::shared_ptr<void> m_context;
     Tcp m_tcp;
     Loop* m_loop;
-    static int m_count;
-    friend class TcpServer;
 };
-int TcpConnection::m_count = 0;
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
 
 

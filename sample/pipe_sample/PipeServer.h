@@ -8,23 +8,57 @@ Date: 2015/9/30
 #ifndef PIPESERVER_H
 #define PIPESERVER_H
 
-#include <unordered_map>
-#include <uvpp/uvpp.h>
+#include <uvpp/uvpp_pipe.h>
+
 
 namespace uv{
 
-typedef QVariant Context;
+
+class PipeConnection
+{
+public:
+    PipeConnection(Loop* loop):
+        m_loop(loop),
+        m_pipe(loop, true)
+    {
+
+    }
+
+    ~PipeConnection()
+    {
+
+    }
+
+    void setContext(const std::shared_ptr<void> &context)
+    {
+        m_context = context;
+    }
+
+    Pipe* pipe()
+    {
+        return &m_pipe;
+    }
+
+    Loop* loop()
+    {
+        return m_loop;
+    }
+
+private:
+    std::shared_ptr<void> m_context;
+    Pipe m_pipe;
+    Loop* m_loop;
+};
+typedef std::shared_ptr<PipeConnection> PipeConnectionPtr;
+
 
 class PipeServer
 {
 public:
-    typedef Pipe Client;
-    typedef std::shared_ptr<Client> ClientPtr;
-    typedef std::function<void(const ClientPtr &, QVariant *context)> CallbackNewConnection;
+    typedef std::function<void(const PipeConnectionPtr &)> CallbackNewConnection;
     explicit PipeServer(Loop* loop):
         m_loop(loop),
-        m_server(loop, true),
-        m_lastClientId(0)
+        m_server(loop, true)
     {
 
     }
@@ -39,31 +73,28 @@ public:
     CallbackNewConnection onConnection;
 private:
     Loop* m_loop;
-    Client m_server;
-    int m_lastClientId;
-    std::unordered_map<int, ClientPtr> m_clients;
+    Pipe m_server;
+
     void handleNewConnection()
     {
-        int clientId = m_lastClientId++;
-        ClientPtr client(new Client(m_loop, true));
-        m_server.accept(client.get());
-        client->read_start();
-        Context* context = new QVariant;
+        PipeConnectionPtr conn(new PipeConnection(m_loop));
+        m_server.accept(conn->pipe());
+        conn->pipe()->read_start();
+
         if (onConnection)
         {
-            onConnection(client, context);
+            onConnection(conn);
         }
 
-        client->onClose([this, clientId, context]
+        conn->pipe()->onClose([conn]
         {
-            m_clients.erase(clientId);
-            delete context;
+            conn->setContext(nullptr);
+            conn->pipe()->onClose(nullptr);
         });
-
-        m_clients.insert(std::pair<int, ClientPtr>(clientId, client));
     }
     DISABLE_COPY(PipeServer)
 };
 }
+
 
 #endif // PIPESERVER_H
