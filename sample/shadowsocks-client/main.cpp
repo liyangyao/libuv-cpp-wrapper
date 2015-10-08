@@ -226,11 +226,6 @@ private:
             m_local->setContext(session);
 
             qDebug()<<"Session("<<session.get()<<")--->"<<url;
-
-
-
-
-
         }
     }
 };

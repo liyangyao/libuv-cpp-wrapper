@@ -36,8 +36,6 @@ public:
         m_context = context;
     }
 
-
-
     Tcp* tcp()
     {
         return &m_tcp;
@@ -82,7 +80,6 @@ private:
     Loop* m_loop;
     Tcp m_server;
 
-
     void handleNewConnection()
     {
         TcpConnectionPtr conn(new TcpConnection(m_loop));
@@ -98,7 +95,6 @@ private:
         {
             conn->setContext(nullptr);
             conn->tcp()->onClose(nullptr);
-            qDebug()<<"onClose usercount="<< conn.use_count();
         });
     }
     DISABLE_COPY(TcpServer)
