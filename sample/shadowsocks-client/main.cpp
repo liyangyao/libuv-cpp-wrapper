@@ -58,7 +58,7 @@ class Session:public std::enable_shared_from_this<Session>
 public:
     Session(const uv::TcpConnectionPtr &conn, const QByteArray& data):
         m_local(conn),
-        m_tcp(conn->loop()),
+        m_tcp(conn->tcp()->handle()->loop),
         m_remoteConnected(false)
     {
         gSessionCount++;
@@ -141,7 +141,6 @@ private:
     }
 };
 typedef std::shared_ptr<Session> SessionPtr;
-Q_DECLARE_METATYPE(SessionPtr);
 
 class AuthSession:public std::enable_shared_from_this<AuthSession>
 {
@@ -218,7 +217,7 @@ private:
             static const QByteArray response(res, 10);
             m_local->tcp()->write(response);
 
-            QString url = QString::fromUtf8(m_buffer->read(m_urlLen));
+            QString url = QString::fromUtf8(m_buffer->read(m_urlLen).simplified());
 
             SessionPtr session(new Session(m_local, m_recved.right(m_recved.length()-3)));
             session->init();
@@ -230,15 +229,14 @@ private:
     }
 };
 typedef std::shared_ptr<AuthSession> AuthSessionPtr;
-Q_DECLARE_METATYPE(AuthSessionPtr);
 
 
 void runThread()
 {
-    uv::Thread* thread = new uv::Thread([&thread]()
+    uv::Thread::run([]
     {
         uv::Loop loop;
-        uv::TcpServer server(&loop);
+        uv::TcpServer server;
         server.onConnection = [&loop](const uv::TcpConnectionPtr &conn)
         {
             AuthSessionPtr authSession(new AuthSession(conn));
@@ -247,16 +245,12 @@ void runThread()
 
         qDebug()<<"listen:"<< server.listen("0.0.0.0", 1081);
         loop.run();
-        delete thread;
     });
-    Q_UNUSED(thread)
-
-
 }
 
 void test()
 {
-    uv::Thread* thread = new uv::Thread([&thread]()
+    uv::Thread::run([]
     {
         uv::Loop loop;
 
@@ -284,9 +278,7 @@ void test()
 
 
         loop.run();
-
     });
-    Q_UNUSED(thread)
 }
 
 int main(int argc, char *argv[])

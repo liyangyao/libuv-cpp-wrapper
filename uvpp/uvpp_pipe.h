@@ -18,11 +18,18 @@ namespace uv{
 class Pipe: public Stream<uv_pipe_t>
 {
 public:
-    explicit Pipe(Loop *loop, bool ipc):
+    explicit Pipe(Loop *loop, bool ipc = true):
         Stream<uv_pipe_t>()
     {
         uv_pipe_init(loop->handle(), handle(), ipc);
     }
+
+    explicit Pipe(uv_loop_t* loop = uv_default_loop(), bool ipc = true):
+        Stream<uv_pipe_t>()
+    {
+        uv_pipe_init(loop, handle(), ipc);
+    }
+
 
     ~Pipe()
     {
@@ -36,31 +43,33 @@ public:
     }
 
 
-    //Start connecion to the remote Pipe.
-    bool connect(const char *name, const CallbackWithResult &onConnect)
+    struct pipe_connect_ctx
     {
-        m_onConnect = onConnect;
-        uv_connect_t *req = new uv_connect_t;
-        req->data = this;
+        uv_connect_t req;
+        CallbackWithResult callback;
+    };
 
-        uv_pipe_connect(req, handle(), name, pipe_connect_cb);
+    //Start connecion to the remote Pipe.
+    bool connect(const char *name, const CallbackWithResult &connectCallback)
+    {
+        pipe_connect_ctx *ctx = new pipe_connect_ctx;
+        ctx->callback = connectCallback;
+        uv_pipe_connect(&ctx->req, handle(), name, pipe_connect_cb);
         return true;
     }
 
 
 private:
-    DISABLE_COPY(Pipe)
     static void pipe_connect_cb(uv_connect_t* req, int status)
     {
-        bool connected = status==0;
-        Pipe *self = reinterpret_cast<Pipe *>(req->data);
-        if (self->m_onConnect)
+        pipe_connect_ctx *ctx = UV_CONTAINER_OF(req, pipe_connect_ctx, req);
+        if (ctx->callback)
         {
-            self->m_onConnect(connected);
+            ctx->callback(status);
         }
-        delete req;
+        delete ctx;
     }
-    CallbackWithResult m_onConnect;
+    DISABLE_COPY(Pipe)
 };
 }
 

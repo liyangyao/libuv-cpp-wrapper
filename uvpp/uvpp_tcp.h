@@ -11,15 +11,28 @@ namespace uv{
 class Tcp: public Stream<uv_tcp_t>
 {
 public:
-    static int TcpCount;
     explicit Tcp(Loop *loop):
         Stream<uv_tcp_t>()
     {
         uv_tcp_init(loop->handle(), handle());
     }
 
+    explicit Tcp(uv_loop_t* loop = uv_default_loop()):
+        Stream<uv_tcp_t>()
+    {
+        uv_tcp_init(loop, handle());
+#ifdef TCP_DEBUG
+        tcpCount++;
+        qDebug()<<"~Tcp="<<tcpCount;
+#endif
+    }
+
     ~Tcp()
     {
+#ifdef TCP_DEBUG
+        tcpCount--;
+        qDebug()<<"~Tcp="<<tcpCount;
+#endif
     }
 
     //Bind to the specified IP and port.
@@ -79,8 +92,7 @@ public:
         return peername;
     }
 
-private:    
-    DISABLE_COPY(Tcp)
+private:        
     static void tcp_connect_cb(uv_connect_t* req, int status)
     {
         tcp_connect_ctx *ctx = UV_CONTAINER_OF(req, tcp_connect_ctx, req);
@@ -90,7 +102,14 @@ private:
         }
         delete ctx;
     }
+#ifdef TCP_DEBUG
+    static int tcpCount;
+#endif
+    DISABLE_COPY(Tcp)
 };
+#ifdef TCP_DEBUG
+int Tcp::tcpCount = 0;
+#endif
 }
 
 #endif // UVPP_TCP_H

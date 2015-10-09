@@ -16,8 +16,7 @@ namespace uv{
 class TcpConnection
 {
 public:
-    TcpConnection(Loop* loop):
-        m_loop(loop),
+    TcpConnection(uv_loop_t* loop):
         m_tcp(loop)
     {
 
@@ -38,15 +37,10 @@ public:
         return &m_tcp;
     }
 
-    Loop* loop()
-    {
-        return m_loop;
-    }
 
 private:
     std::shared_ptr<void> m_context;
     Tcp m_tcp;
-    Loop* m_loop;
 };
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
 
@@ -55,7 +49,7 @@ class TcpServer
 {
 public:
     typedef std::function<void(const TcpConnectionPtr &)> CallbackNewConnection;
-    explicit TcpServer(Loop* loop):
+    explicit TcpServer(uv_loop_t* loop = uv_default_loop()):
         m_loop(loop),
         m_server(loop)
     {
@@ -71,7 +65,7 @@ public:
 
     CallbackNewConnection onConnection;
 private:
-    Loop* m_loop;
+    uv_loop_t* m_loop;
     Tcp m_server;
 
     void handleNewConnection()
@@ -88,7 +82,6 @@ private:
         conn->tcp()->onClose([conn]
         {
             conn->setContext(nullptr);
-            conn->tcp()->onClose(nullptr);
         });
     }
     DISABLE_COPY(TcpServer)

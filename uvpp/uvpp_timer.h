@@ -8,10 +8,16 @@ namespace uv{
 class Timer: public Handle<uv_timer_t>
 {
 public:
-    Timer(Loop* loop):
+    explicit Timer(Loop* loop):
         Handle<uv_timer_t>()
     {
         uv_timer_init(loop->handle(), handle());
+    }
+
+    explicit Timer(uv_loop_t* loop = uv_default_loop()):
+        Handle<uv_timer_t>()
+    {
+        uv_timer_init(loop, handle());
     }
 
     //Start the Timer.
@@ -48,10 +54,10 @@ private:
     Callback m_functor;
     static void timer_cb(uv_timer_t* handle)
     {
-        Timer* _this = (Timer *)handle->data;
-        if (_this->m_functor)
+        Timer* self = (Timer *)handle->data;
+        if (self->m_functor)
         {
-            _this->m_functor();
+            self->m_functor();
         }
     }
 };

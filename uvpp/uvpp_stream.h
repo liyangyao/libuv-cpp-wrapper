@@ -11,7 +11,6 @@ Date: 2015/8/17
 #include "uvpp_define.h"
 #include "uvpp_handle.h"
 #include "uvpp_loop.h"
-#include "libuv/queue.h"
 
 namespace uv{
 
@@ -125,10 +124,10 @@ private:
     static void stream_connection_cb(uv_stream_t* server, int /*status*/)
     {
         if (!server->data) return;
-        Stream *_this = reinterpret_cast<Stream *>(server->data);
-        if (_this->m_connectionCallback)
+        Stream *self = reinterpret_cast<Stream *>(server->data);
+        if (self->m_connectionCallback)
         {
-            _this->m_connectionCallback();
+            self->m_connectionCallback();
         }
     }
 
@@ -136,22 +135,24 @@ private:
     {
         //nread is > 0 if there is data available, 0 if libuv is done reading for now, or < 0 on error.
         if (!stream->data) return;
-        Stream *_this = reinterpret_cast<Stream *>(stream->data);
+        Stream *self = reinterpret_cast<Stream *>(stream->data);
         if (nread>0)
         {
-            if (_this->m_dataCallback)
+            if (self->m_dataCallback)
             {
-                _this->m_dataCallback(buf->base, nread);
+                self->m_dataCallback(buf->base, nread);
             }
         }
         else if (nread<0)
         {
-            if (_this->m_endCallback)
+            if (self->m_endCallback)
             {
-                _this->m_endCallback();
-            }
-            _this->read_stop();
-            _this->close();
+                self->m_endCallback();
+            }            
+            self->m_dataCallback = nullptr;
+            self->m_endCallback = nullptr;
+            self->read_stop();
+            self->close();
         }
         Loop* loop = (Loop *)stream->loop->data;
         loop->buffer.in_use = false;

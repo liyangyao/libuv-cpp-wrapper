@@ -20,7 +20,7 @@ class AsyncFunctor
 public:
     explicit AsyncFunctor(Loop* loop)
     {
-        m_async.reset(new Async(loop, std::bind(&AsyncFunctor::onFunctor, this)));
+        m_async.reset(new Async(std::bind(&AsyncFunctor::onFunctor, this), loop));
     }
 
     void queue(const Callback &functor)

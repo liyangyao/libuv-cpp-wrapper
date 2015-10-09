@@ -106,10 +106,10 @@ private:
     uv_cond_t m_cond;
 };
 
-class Thread
+class ThreadPrivate
 {
 public:
-    explicit Thread(const Callback& functor)
+    explicit ThreadPrivate(const Callback& functor)
     {
         m_functor = functor;
         uv_thread_create(&m_handle, entry, this);
@@ -125,15 +125,49 @@ private:
     Callback m_functor;
     static void entry(void* arg)
     {
-        Thread* _this = (Thread *)arg;
-        if (_this->m_functor)
+        ThreadPrivate* self = (ThreadPrivate *)arg;
+        if (self->m_functor)
         {
-            _this->m_functor();
+            self->m_functor();
         }
-        delete _this;
+        delete self;
     }
-    DISABLE_COPY(Thread);
+    DISABLE_COPY(ThreadPrivate)
 };
+
+class Thread
+{
+public:
+    explicit Thread(const Callback& functor):
+        m_threadPrivate(new ThreadPrivate(functor))
+    {
+
+    }
+
+    int join()
+    {
+        if (m_threadPrivate)
+        {
+            return m_threadPrivate->join();
+        }
+        return 0;
+    }
+
+    void detach()
+    {
+        m_threadPrivate = nullptr;
+    }
+
+    static void run(const Callback& functor)
+    {
+        new ThreadPrivate(functor);
+    }
+
+private:
+    ThreadPrivate* m_threadPrivate;
+    DISABLE_COPY(Thread)
+};
+
 }
 
 #endif // UVPP_THREAD_H

@@ -17,11 +17,18 @@ namespace uv{
 class Idle: public Handle<uv_idle_t>
 {
 public:
-    explicit Idle(Loop* loop, const Callback &functor):
+    explicit Idle(const Callback &functor, Loop* loop):
         Handle<uv_idle_t>(),
         m_functor(functor)
     {
         uv_idle_init(loop->handle(), handle());
+    }
+
+    explicit Idle(const Callback &functor, uv_loop_t* loop = uv_default_loop()):
+        Handle<uv_idle_t>(),
+        m_functor(functor)
+    {
+        uv_idle_init(loop, handle());
     }
 
     void start()

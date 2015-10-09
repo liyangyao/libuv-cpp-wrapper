@@ -94,12 +94,15 @@ private:
         HANDLE_T* _handle = reinterpret_cast<HANDLE_T *>(handle);
         if (_handle->data)//Handle alive
         {
-            Handle* _this = (Handle *)_handle->data;
+            Handle* self = (Handle *)_handle->data;
             handle->data = nullptr;//set closed
-            if (_this->m_closeCallback)
+            Callback onClose = self->m_closeCallback;
+            self->m_closeCallback = nullptr;
+
+            if (onClose)
             {
-                _this->m_closeCallback();
-            }
+                onClose();
+            }            
         }
         else{
             delete _handle;

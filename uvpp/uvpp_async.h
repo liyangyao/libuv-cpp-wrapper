@@ -9,11 +9,18 @@ namespace uv{
 class Async: public Handle<uv_async_t>
 {
 public:
-    explicit Async(Loop* loop,const Callback& functor):
+    explicit Async(const Callback& functor, Loop* loop):
         Handle<uv_async_t>(),
         m_functor(functor)
     {
         uv_async_init(loop->handle(), handle(), async_cb);
+    }
+
+    explicit Async(const Callback& functor, uv_loop_t* loop = uv_default_loop()):
+        Handle<uv_async_t>(),
+        m_functor(functor)
+    {
+        uv_async_init(loop, handle(), async_cb);
     }
 
     void send()
@@ -25,10 +32,10 @@ private:
     Callback m_functor;
     static void async_cb(uv_async_t* handle)
     {
-        Async* _this = (Async *)handle->data;
-        if (_this->m_functor)
+        Async* self = (Async *)handle->data;
+        if (self->m_functor)
         {
-            _this->m_functor();
+            self->m_functor();
         }
     }
     DISABLE_COPY(Async);
