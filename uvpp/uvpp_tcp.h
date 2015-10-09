@@ -15,15 +15,11 @@ public:
     explicit Tcp(Loop *loop):
         Stream<uv_tcp_t>()
     {
-        TcpCount++;
-        qDebug()<<"Tcp create("<<this<<")"<<TcpCount;
         uv_tcp_init(loop->handle(), handle());
     }
 
     ~Tcp()
     {
-        TcpCount--;
-        qDebug()<<"~Tcp destructor("<<this<<")"<<TcpCount;
     }
 
     //Bind to the specified IP and port.
@@ -95,7 +91,6 @@ private:
         delete ctx;
     }
 };
-int Tcp::TcpCount = 0;
 }
 
 #endif // UVPP_TCP_H

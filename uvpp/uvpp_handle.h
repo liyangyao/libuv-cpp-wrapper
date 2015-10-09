@@ -105,7 +105,6 @@ private:
             delete _handle;
         }
     }
-    DISABLE_COPY(Handle)
 };
 }
 

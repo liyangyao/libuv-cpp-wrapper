@@ -122,7 +122,6 @@ public:
     }
 
 private:
-    DISABLE_COPY(Stream)
     static void stream_connection_cb(uv_stream_t* server, int /*status*/)
     {
         if (!server->data) return;
@@ -151,6 +150,7 @@ private:
             {
                 _this->m_endCallback();
             }
+            _this->read_stop();
             _this->close();
         }
         Loop* loop = (Loop *)stream->loop->data;
