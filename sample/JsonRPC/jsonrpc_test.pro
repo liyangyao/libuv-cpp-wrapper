@@ -1,6 +1,6 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2015-09-14T10:11:34
+# Project created by QtCreator 2015-10-09T14:38:56
 #
 #-------------------------------------------------
 
@@ -8,18 +8,14 @@ QT       += core
 
 QT       -= gui
 
-TARGET = JsonRPC
+TARGET = jsonrpc
 CONFIG   += console
 CONFIG   -= app_bundle
 
 TEMPLATE = app
 
 
-SOURCES += main.cpp \
-    service.cpp
+SOURCES += jsonrpc_test_main.cpp
 
 HEADERS += \
-    service.h \
-    jsonrpc/message.h \
-    jsonrpc/result.h \
-    jsonrpc/serviceprovider.h
+    jsonrpc.h
