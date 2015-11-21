@@ -20,6 +20,11 @@ Date: 2015/9/28
 #pragma execution_character_set("utf-8")
 #endif
 
+//#define JSONRPC_DEBUG_MSG
+#ifdef JSONRPC_DEBUG_MSG
+#include <QDebug>
+#endif
+
 namespace jsonrpc{
 
 typedef QObject Service;
@@ -89,8 +94,17 @@ public:
         case QMetaType::QVariantList:
             return value.toArray().toVariantList();
         case QMetaType::QStringList:
+        {
+            QStringList list;
+            QJsonArray array = value.toArray();
+            foreach(const QJsonValue &v, array)
+            {
+                list.append(v.toString());
+            }
+            return list;
+        }
         case QMetaType::QVariantMap:
-            return value.toObject().toVariantMap();
+            return value.toObject().toVariantMap();        
         case QMetaType::QString:
             return value.toString();
         case QMetaType::Bool:
@@ -228,26 +242,29 @@ class Message
 {
 public:
     Message(const QJsonObject &jsonObject):
-        m_root(jsonObject),
-        m_params(jsonObject["params"].toArray())
+        m_root(jsonObject)
     {
-        m_id = m_root["id"].toInt();
+        m_id = m_root["id"];
         m_method = m_root["method"].toString();
         m_isValid = !m_method.isEmpty();
+
+        QJsonValue params = jsonObject["params"];
+        if (params.isArray())
+        {
+            m_params = params.toArray();
+        }
+        if (params.isObject())
+        {
+            m_params.append(params.toObject());
+        }
     }
 
-    Message(const QString& method, int id=0):
+    Message(const QString& method, QVariant v = QVariant()):
         m_method(method),
-        m_id(id)
+        m_id(QJsonValue::fromVariant(v))
     {
-        m_root["method"] = method;
-        if (id>0)
-        {
-            m_root["id"] = id;
-        }
-        else{
-            m_root["id"] = QJsonValue();
-        }
+        m_root["method"] = method; 
+        m_root["id"] = QJsonValue::fromVariant(v);
         m_root["params"] = m_params;
         m_isValid = !m_method.isEmpty();
     }
@@ -273,14 +290,14 @@ public:
         return m_isValid;
     }
 
-    int id()
+    QJsonValue id()
     {
         return m_id;
     }
 
     bool isNotification()
     {
-        return m_id<=0;
+        return m_id.isNull();
     }
 
     QString method()
@@ -301,7 +318,7 @@ public:
 private:
     QJsonObject m_root;
     QJsonArray m_params;
-    int m_id;
+    QJsonValue m_id;
     QString m_method;
     bool m_isValid;
 };
@@ -309,7 +326,7 @@ private:
 class Result
 {
 public:
-    Result(int id = NULL):
+    Result(QJsonValue id = QJsonValue()):
         m_id(id),
         m_errorCode(0)
 
@@ -317,7 +334,7 @@ public:
 
     }
 
-    int id()
+    QJsonValue id()
     {
         return m_id;
     }
@@ -375,13 +392,7 @@ public:
     QJsonObject value()
     {
         QJsonObject root;
-        if (m_id<=0)
-        {
-            root["id"] = QJsonValue();
-        }
-        else{
-            root["id"] = m_id;
-        }
+        root["id"] = m_id;
         if (m_errorCode!=0)
         {
             QJsonObject error;
@@ -396,7 +407,7 @@ public:
     }
 
 private:
-    int m_id;
+    QJsonValue m_id;
     int m_errorCode;
     QString m_errorMessage;
     QVariant m_returnValue;
@@ -423,36 +434,32 @@ public:
             m->service = service;
             m->method = method;
             m_serviceMethods.insert(methodSignature, m);
+#ifdef JSONRPC_DEBUG_MSG
+            qDebug()<<"ServiceProvider regist methodSignature:"<<methodSignature;
+#endif
         }
     }
 
-    QJsonObject deliverCall(Message *message)
+    QJsonDocument deliverCall(Message *message)
     {
-        Result result(message->id());
-        ServiceMethodPtr serviceMethod = m_serviceMethods.value(message->signature(), nullptr);
-
-        if (serviceMethod)
+        QJsonObject object = invoke(message);
+        if (object.isEmpty())
         {
-            QVariant returnValue = inner::Util::invoke(serviceMethod->service.get(), serviceMethod->method, message->params());
-            result.setReturnValue(returnValue);
+            return QJsonDocument();
         }
-        else{
-            result.setMethodNotFound();
-        }
-        return result.value();
+        return QJsonDocument(object);
     }
 
-    QJsonDocument deliverCall(const QByteArray &data)
+    QJsonDocument deliverCall(const QJsonDocument &json)
     {
-        QJsonDocument json= QJsonDocument::fromJson(data);
         if (json.isObject())
         {
             QJsonObject ret = jsonrpcObject(json.object());
-            if (!ret.isEmpty())
+            if (ret.isEmpty())
             {
-                return QJsonDocument(ret);
+                return QJsonDocument();
             }
-            return QJsonDocument();
+            return QJsonDocument(ret);
         }
         if (json.isArray())
         {
@@ -463,8 +470,38 @@ public:
         return QJsonDocument(result.value());
     }
 
+    QJsonDocument deliverCall(const QByteArray &data)
+    {
+        QJsonDocument json= QJsonDocument::fromJson(data);
+        return deliverCall(json);
+    }
+
 private:
     QHash<QString, ServiceMethodPtr> m_serviceMethods;
+    QJsonObject invoke(Message *message)
+    {
+#ifdef JSONRPC_DEBUG_MSG
+        qDebug()<<"ServiceProvider invoke message->signature()="<<message->signature();
+#endif
+        ServiceMethodPtr serviceMethod = m_serviceMethods.value(message->signature(), nullptr);
+        if (serviceMethod)
+        {
+            QVariant returnValue = inner::Util::invoke(serviceMethod->service.get(), serviceMethod->method, message->params());
+            if (message->isNotification())
+            {
+                return QJsonObject();
+            }
+            Result result(message->id());
+            result.setReturnValue(returnValue);;
+            return result.value();
+        }
+        else{
+            Result result(message->id());
+            result.setMethodNotFound();
+            return result.value();
+        }
+    }
+
     QJsonObject jsonrpcObject(const QJsonObject &object)
     {
         jsonrpc::Message msg(object);
@@ -474,7 +511,7 @@ private:
             result.setInvalidRequest();
             return result.value();
         }
-        return deliverCall(&msg);
+        return invoke(&msg);
     }
 
     QJsonDocument jsonrpcArray(const QJsonArray &array)

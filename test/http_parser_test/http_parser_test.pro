@@ -19,6 +19,6 @@ SOURCES += tst_http_parser_test.cpp
 DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 
-include(..\..\..\..\HttpParser.pri)
+include(..\..\HttpParser.pri)
 INCLUDEPATH += (..\..\..\)
 

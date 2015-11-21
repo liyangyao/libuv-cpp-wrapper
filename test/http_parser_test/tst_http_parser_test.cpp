@@ -7,7 +7,7 @@ Date: 2015/6/30
 
 #include <QString>
 #include <QtTest>
-#include <uvpp/base/HttpParser.h>
+#include <httpparser/http_parser_pp.h>
 
 class Http_parser_test : public QObject
 {
@@ -52,7 +52,7 @@ void Http_parser_test::chunked()
                  "1\r\na\r\n"
                  "2\r\na");
     QByteArray d2("b\r\n"
-                 "0\r\n");
+                 "0\r\n\r\n");
     HttpParser hp;
     hp.onMessageBegin = []()->int
     {
@@ -69,6 +69,12 @@ void Http_parser_test::chunked()
         qDebug()<<"body:"<<QByteArray(at, length);
         return 0;
     };
+    hp.onMessageComplete = []()
+    {
+        qDebug()<<"message complete"  ;
+        return 0;
+    };
+
     hp.execute(d.constData(), d.length());
     hp.execute(d2.constData(), d2.length());
     hp.execute(nullptr, 0);

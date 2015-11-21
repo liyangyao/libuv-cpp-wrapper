@@ -1,6 +1,6 @@
 INCLUDEPATH += $$PWD
 
-HEADERS += httpparser/http_parser.h\
-           httpparser/http_parser_pp.h
+HEADERS += $$PWD/httpparser/http_parser.h\
+           $$PWD/httpparser/http_parser_pp.h
     
-SOURCES += httpparser/http_parser.c
+SOURCES += $$PWD/httpparser/http_parser.c
